@@ -76,7 +76,7 @@ right = L * ones(Vec{1})
 grid = generate_grid(Line, N, left, right)
 input_exp = []
 output_exp = []
-for row in CSV.File("new-data.csv"; delim = " ")
+for row in CSV.File("../data/experiment/new-data.csv"; delim = " ")
     push!(input_exp, row.I)
     push!(output_exp, row.O)
 end

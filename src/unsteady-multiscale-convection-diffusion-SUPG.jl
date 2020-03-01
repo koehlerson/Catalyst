@@ -76,10 +76,12 @@ right = L * ones(Vec{1})
 grid = generate_grid(Line, N, left, right)
 input_exp = []
 output_exp = []
-for row in CSV.File("../data/experiment/new-data.csv"; delim = " ")
+cd("data/experiment/")
+for row in CSV.File("new-data.csv"; delim = " ")
     push!(input_exp, row.I)
     push!(output_exp, row.O)
 end
+cd("../../")
 
 ip = Lagrange{1,RefCube,1}() #Interpolation
 qr = QuadratureRule{1,RefCube}(3) #QuadratureRule

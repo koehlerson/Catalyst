@@ -35,26 +35,31 @@ function catalystUpdate!(
     dh::JuAFEM.DofHandler,
     c::AbstractVector,
     Catalysts::Array,
+    δT::Float64,
+    w::Float64,
 ) where {dim}
+n_basefuncs = getnbasefunctions(cellvalues)
     @inbounds for cell in CellIterator(dh)
         Catalyst = Catalysts[cell.current_cellid.x]
         reinit!(cellvalues, cell)
         dofs = celldofs(cell)
         ce = [c[dof] for dof in dofs]
+        #cₑ = 0.
         for q_point = 1:getnquadpoints(cellvalues)
             cₑ = function_value(cellvalues, q_point, ce)
             coeff = catalystCoeff(Catalyst[q_point])
             cᵧ_old = Catalyst[q_point].cᵧ_old
-            cᵧ_new = 0
-            for t in 0:Catalyst[q_point].Δt:1
-                cᵧ_new += (1 / (1 + coeff)) * (cᵧ_old + coeff * cₑ)
+            cᵧ_new = copy(cᵧ_old)
+            for t in 0:Catalyst[q_point].Δt:1.0
+                cᵧ_new = (1.0 / (1.0 + coeff)) * (cᵧ_old + coeff * cₑ)
+                cᵧ_old = copy(cᵧ_new)
             end
-            Catalyst[q_point].cᵧ_old = cᵧ_new
+            Catalyst[q_point].cᵧ_old = copy(cᵧ_new)
         end
     end
 end
-
-
+test = 1:1
+test[1]
 theme(:gruvbox_dark)
 #plotly()
 pyplot()
@@ -189,6 +194,7 @@ function doassemble(
     me = zeros(n_basefuncs)
     m = zeros(ndofs(dh))
     @inbounds for cell in CellIterator(dh)
+        fill!(me, 0.0)
         reinit!(cellvalues, cell)
         idx = cell.current_cellid.x
         Catalyst = Catalysts[idx] # get the Catalyst of the element
@@ -201,9 +207,11 @@ function doassemble(
                 v = shape_value(cellvalues, q_point, i)
                 ∇v = shape_gradient(cellvalues, q_point, i)
                 me[i] +=
-                    k * (1 / (1 + coeff)) * cᵧ_old * v * dΩ +
-                    k * (1 / (1 + coeff)) * cᵧ_old * (δT * w ⋅ ∇v) * dΩ
+                    k * (1 / (1 + coeff)) * cᵧ_old * v * dΩ
+                    + k * (1 / (1 + coeff)) * cᵧ_old * (δT * w ⋅ ∇v) * dΩ
+                #me[i] = 0
             end
+
         end
         assemble!(m, celldofs(cell), me)
     end
@@ -215,26 +223,29 @@ end
 
 K, f = doassemble(Dₑ, w, δT, cv, K, dh)
 M = doassemble(w, δT, cv, M, dh)
-coeff = catalystCoeff(states[1][1])
-states[1][1]
-coeff
-A = M + (Δt * K) - (k * M) + (k * (1 / (1 + coeff)) * coeff * M)
+coeff = catalystCoeff(states[50][2])
+
+A = M + (Δt * K) + (Δt*k * M) - (Δt*k * (1 / (1 + coeff)) * coeff * M)
 
 c_0 = zeros(ndofs(dh))
 c_n = copy(c_0)
 
 store = []
+m_time = []
+m = doassemble(states, w, δT, cv, dh)
+
 
 for t = 1:Δt:T
     update!(ch, t) # load current dbc values from input_exp
 
     m = doassemble(states, w, δT, cv, dh)
-    global b = Δt * f + M * c_n - m # get the discrete rhs
+    global b = Δt * f + M * c_n + Δt*m # get the discrete rhs
+    push!(m_time, m)
     copyA = copy(A)
     apply!(copyA, b, ch) # apply time-dependent dbc
     global c = copyA \ b # solve the current time step
 
-    catalystUpdate!(cv, dh, c, states)
+    catalystUpdate!(cv, dh, c, states, δT, w)
 
     push!(store, c) # store current solution
     global c_n = copy(c) # update time step
@@ -243,15 +254,17 @@ end
 function plotAnimation(storage::Array, gifname::String)
     t = 0
     anim = @animate for field in storage
-        plot(field, ylim = (-0.5, 1), label = "time=$t")
+        plot(field, ylim = (-2, 2), label = "time=$t")
         t += 1
     end
 
     gif(anim, gifname, fps = 30)
 end
+m = doassemble(states, w, δT, cv, dh)
 
 
 plot(c)#, ylims = (0, 1))
 #cᵧ = [state[1].cᵧ_old for state in states]
 #plot(cᵧ)
-#plotAnimation(store, "done.gif")
+plotAnimation(store, "done.gif")
+plotAnimation(m_time, "m.gif")

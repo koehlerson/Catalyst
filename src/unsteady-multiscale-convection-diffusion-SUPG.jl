@@ -195,9 +195,9 @@ function doassemble(
         Catalyst = Catalysts[idx] # get the Catalyst of the element
         for q_point = 1:getnquadpoints(cellvalues)
             dΩ = getdetJdV(cellvalues, q_point)
-            coeff = copy(catalystCoeff(Catalyst[q_point]))
-            cᵧ_old = copy(Catalyst[q_point].cᵧ_old)
-            k = copy(Catalyst[q_point].k)
+            coeff = catalystCoeff(Catalyst[q_point])
+            cᵧ_old = Catalyst[q_point].cᵧ_old
+            k = Catalyst[q_point].k
             for i = 1:n_basefuncs
                 v = shape_value(cellvalues, q_point, i)
                 ∇v = shape_gradient(cellvalues, q_point, i)

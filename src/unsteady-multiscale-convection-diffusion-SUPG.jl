@@ -44,17 +44,12 @@ n_basefuncs = getnbasefunctions(cellvalues)
         reinit!(cellvalues, cell)
         dofs = celldofs(cell)
         ce = [c[dof] for dof in dofs]
-        #cₑ = 0.
         for q_point = 1:getnquadpoints(cellvalues)
             cₑ = function_value(cellvalues, q_point, ce)
             coeff = catalystCoeff(Catalyst[q_point])
             cᵧ_old = Catalyst[q_point].cᵧ_old
-            cᵧ_new = copy(cᵧ_old)
-            for t in 0:Catalyst[q_point].Δt:1.0
-                cᵧ_new = (1.0 / (1.0 + coeff)) * (cᵧ_old + coeff * cₑ)
-                cᵧ_old = copy(cᵧ_new)
-            end
-            Catalyst[q_point].cᵧ_old = copy(cᵧ_new)
+            cᵧ_new = (1.0 / (1.0 + coeff)) * (cᵧ_old + coeff * cₑ)
+            Catalyst[q_point].cᵧ_old = cᵧ_new
         end
     end
 end
@@ -71,10 +66,10 @@ T = 1000
 Δt = 1
 w = 1.9128e-4 * (1 / 0.37)
 Dₑ = 1e-9
-Dᵢ = 1e-13
+Dᵢ = 1e-12
 k = 0.19
 rᵢ = 2.15e-7
-kᵧ = 1e-6
+kᵧ = 1e-7
 
 left = zero(Vec{1})
 right = L * ones(Vec{1})
@@ -208,7 +203,7 @@ function doassemble(
                 ∇v = shape_gradient(cellvalues, q_point, i)
                 me[i] +=
                     k * (1 / (1 + coeff)) * cᵧ_old * v * dΩ
-                    + k * (1 / (1 + coeff)) * cᵧ_old * (δT * w ⋅ ∇v) * dΩ
+                    + k * (1 / (1 + coeff)) * cᵧ_old * (δT ⋅ w ⋅ ∇v) * dΩ
                 #me[i] = 0
             end
 
@@ -231,7 +226,6 @@ c_0 = zeros(ndofs(dh))
 c_n = copy(c_0)
 
 store = []
-m_time = []
 m = doassemble(states, w, δT, cv, dh)
 
 
@@ -240,7 +234,7 @@ for t = 1:Δt:T
 
     m = doassemble(states, w, δT, cv, dh)
     global b = Δt * f + M * c_n + Δt*m # get the discrete rhs
-    push!(m_time, m)
+
     copyA = copy(A)
     apply!(copyA, b, ch) # apply time-dependent dbc
     global c = copyA \ b # solve the current time step
@@ -263,8 +257,8 @@ end
 m = doassemble(states, w, δT, cv, dh)
 
 
-plot(c)#, ylims = (0, 1))
+plot(c, ylims = (0, 1))
 #cᵧ = [state[1].cᵧ_old for state in states]
-#plot(cᵧ)
-plotAnimation(store, "done.gif")
-plotAnimation(m_time, "m.gif")
+#plot(cᵧ,ylims = (0, 1))
+#plotAnimation(store, "done.gif")
+#plotAnimation(m_time, "m.gif")

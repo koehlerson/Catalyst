@@ -54,14 +54,12 @@ function getNodes(meshString::Array{String})
     return collect(Iterators.flatten(nodes))
 end
 
-function getElements(meshString::Array{String})
+function getElements(meshString::Array{String}, dim)
     elementStart = findall(meshString .== "\$Elements")[1] #\$ escape string key $
     elementStop = findall(meshString .== "\$EndElements")[1]
     elementTotal = parse(Int, split(meshString[elementStart+1])[2]) #no. of Nodes
-    zeroDimElements = []
-    oneDimElements = []
-    twoDimElements = []
-    threeDimElements = []
+    boundaryElements = []
+    domainElements = []
     ele = []
     eleBlock::Int = 0
     tmp = 0
@@ -76,14 +74,10 @@ function getElements(meshString::Array{String})
             eleBlock = parse(Int, split(eleLine)[4])
             tmp = eleBlock
             if first == false
-                if eleDim == 0
-                    push!(zeroDimElements, ele)
-                elseif eleDim == 1
-                    push!(oneDimElements, ele)
-                elseif eleDim == 2
-					push!(twoDimElements, pushfirst!.(ele,tag))
-                elseif eleDim == 3
-                    push!(threeDimElements, ele)
+                if eleDim == dim-1
+					push!(boundaryElements, pushfirst!.(ele,tag))
+                elseif eleDim == dim
+                    push!(domainElements, ele)
                 end
             end
             eleDim = parse(Int, split(eleLine)[1])
@@ -95,22 +89,16 @@ function getElements(meshString::Array{String})
             eleBlock -= 1.0
         end
     end
-    if eleDim == 0
-        push!(zeroDimElements, ele)
-    elseif eleDim == 1
-        push!(oneDimElements, ele)
-    elseif eleDim == 2
-		push!(twoDimElements, pushfirst!.(ele,tag))
-    elseif eleDim == 3
-        push!(threeDimElements, ele)
+    if eleDim == dim-1
+		push!(boundaryElements, pushfirst!.(ele,tag))
+    elseif eleDim == dim
+        push!(domainElements, ele)
     end
 
     # flatten the array
-    zeroDimElements = collect(Iterators.flatten(zeroDimElements))
-    oneDimElements = collect(Iterators.flatten(oneDimElements))
-    twoDimElements = collect(Iterators.flatten(twoDimElements))
-    threeDimElements = collect(Iterators.flatten(threeDimElements))
-    return zeroDimElements, oneDimElements, twoDimElements, threeDimElements
+    boundaryElements = collect(Iterators.flatten(boundaryElements))
+    domainElements = collect(Iterators.flatten(domainElements))
+    return boundaryElements, domainElements
 end
 
 function nodeToDataFrame(nodes)
@@ -143,7 +131,7 @@ function getGrid(meshSource)
 
 	meshnodes = getNodes(lines)
 
-	zero, one, two, three = getElements(lines)
+	two, three = getElements(lines,3)
 	
 	two_c = hcat(two...)'
 	three_c = hcat(three...)'

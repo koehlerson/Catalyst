@@ -1,4 +1,5 @@
 using JuAFEM, SparseArrays, UnicodePlots, Plots
+import ProgressMeter.@showprogress
 import Gadfly, CSV
 
 #<: is a subtype of
@@ -229,7 +230,7 @@ store = []
 m = doassemble(states, w, δT, cv, dh)
 
 
-for t = 1:Δt:T
+@showprogress for t = 1:Δt:T
     update!(ch, t) # load current dbc values from input_exp
 
     m = doassemble(states, w, δT, cv, dh)

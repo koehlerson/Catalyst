@@ -4,8 +4,6 @@ using DataFrames
 
 LinTetra = Dict(1 => 3, 2 => 4, 3 => 2, 4 => 1) #maps missing node to local faceid
 
-io = open("src/test.msh")
-lines = readlines(io)
 
 function getNodes(meshString::Array{String})
     """
@@ -68,6 +66,7 @@ function getElements(meshString::Array{String})
     eleBlock::Int = 0
     tmp = 0
     eleDim = 0
+	tag = 1
     first = true
 
     for eleLine in meshString[elementStart+2:elementStop-1]
@@ -82,13 +81,14 @@ function getElements(meshString::Array{String})
                 elseif eleDim == 1
                     push!(oneDimElements, ele)
                 elseif eleDim == 2
-                    push!(twoDimElements, ele)
+					push!(twoDimElements, pushfirst!.(ele,tag))
                 elseif eleDim == 3
                     push!(threeDimElements, ele)
                 end
             end
             eleDim = parse(Int, split(eleLine)[1])
             ele = []
+			tag = parse(Int, split(eleLine)[2]) 
             first = false
         else
             push!(ele, parse.(Int, split(eleLine)))
@@ -100,7 +100,7 @@ function getElements(meshString::Array{String})
     elseif eleDim == 1
         push!(oneDimElements, ele)
     elseif eleDim == 2
-        push!(twoDimElements, ele)
+		push!(twoDimElements, pushfirst!.(ele,tag))
     elseif eleDim == 3
         push!(threeDimElements, ele)
     end
@@ -122,79 +122,45 @@ function nodeToDataFrame(nodes)
 end
 
 function getBoundaryElements(elements, boundaries, facemap)
-	boundary_elements = Tuple{Int,Int}[]
+	boundary_elements = Tuple{Int,Int,Int}[]
 	for i = 1:length(boundaries[:,1]), j = 1:length(elements[:,1])
-		if issubset(boundaries[i,2:end], elements[j,2:end])
+		if issubset(boundaries[i,3:end], elements[j,2:end])
 			miss = 0
 			for row_idx in 2:length(elements[j,:])
 				if !issubset(elements[j, row_idx], boundaries[i,2:end])
 					miss = row_idx - 1 #store the missing node number neglects tag in counting
 				end
 			end
-			push!(boundary_elements, (j, facemap[miss]))
+			push!(boundary_elements, (boundaries[i,1], j, facemap[miss]))
 		end
 	end
 	return boundary_elements
 end
 
+function getGrid(meshSource)
+	io = open(meshSource)
+	lines = readlines(io)
 
-meshnodes = getNodes(lines)
-df = nodeToDataFrame(getNodes(lines))
-show(df)
+	meshnodes = getNodes(lines)
 
-zero, one, two, three = getElements(lines)
+	zero, one, two, three = getElements(lines)
+	
+	two_c = hcat(two...)'
+	three_c = hcat(three...)'
+	boundary = getBoundaryElements(three_c, two_c, LinTetra) 
+	facesets = Dict{String,Set{Tuple{Int,Int}}}()
+	
+	for idx in unique(two_c[:,1])
+		slice = filter(x->x[1]==idx, boundary)
+		facesets["$idx"] = Set{Tuple{Int,Int}}(getindex.(slice,[2:3]))
+	end
+	
+	nodes = [Node((x[2], x[3], x[4])) for x in meshnodes]
+	elements = [Tetrahedron((convert(Int,n[2]),
+	                        convert(Int,n[3]),
+	                        convert(Int,n[4]),
+	                        convert(Int,n[5]))) for n in three]
+	
+	return Grid(elements, nodes, facesets=facesets)
 
-zero
-one
-two
-three
-
-two_c = hcat(two...)'
-three_c = hcat(three...)'
-boundary = getBoundaryElements(three_c, two_c, LinTetra) 
-
-
-nodes = [Node((x[2], x[3], x[4])) for x in meshnodes]
-elements = [Tetrahedron((convert(Int,n[2]),
-                        convert(Int,n[3]),
-                        convert(Int,n[4]),
-                        convert(Int,n[5]))) for n in three]
-facesets = Dict("Boundary" => Set{Tuple{Int,Int}}(boundary))
-grid = Grid(elements,nodes,facesets=facesets)
-dh  = DofHandler(grid)
-push!(dh, :c, 1)
-close!(dh)
-
-ch = ConstraintHandler(dh)
-∂Ω = getfaceset(grid, "Boundary")
-dbc = Dirichlet(:c,∂Ω, (x,t)-> 100)
-add!(ch, dbc)
-close!(ch)
-
-
-#ip = Lagrange{3,RefTetrahedron,1}()
-#qr = QuadratureRule{3,RefTetrahedron}(1)
-#cellvalues = CellScalarValues(qr,ip)
-#n_base_funcs = getnbasefunctions()
-#
-test = zeros(ndofs(dh))
-K = create_sparsity_pattern(dh)
-fill!(K.nzval, 1.0)
-apply!(K, test, ch)
-test_sol = K \ test
-## vtk write test
-vtk_grid("boundary-test", dh) do vtk
-	vtk_point_data(vtk, dh, test_sol)
 end
-
-dh = DofHandler(grid)
-push!(dh, :u, 3)
-close!(dh)
-dbcs = ConstraintHandler(dh)
-foreach(x -> add!(dbcs, Dirichlet(:u, getfaceset(grid, x), (x,t) -> [0.0, 0.0, 0.0], [1, 2, 3])),  keys(grid.facesets))
-close!(dbcs)
-
-vtk = vtk_grid("face-test", grid)
-vtk_point_data(vtk, dbcs)
-vtk_save(vtk)
-

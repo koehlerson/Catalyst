@@ -1,6 +1,6 @@
-using JuAFEM, SparseArrays
-using DataFrames
+using JuAFEM, DataFrames 
 
+module Parser
 
 LinTetra = Dict(1 => 3, 2 => 4, 3 => 2, 4 => 1) #maps missing node to local faceid
 
@@ -150,5 +150,7 @@ function getGrid(meshSource)
 	                        convert(Int,n[5]))) for n in three]
 	
 	return Grid(elements, nodes, facesets=facesets)
+
+end
 
 end

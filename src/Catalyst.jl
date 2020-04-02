@@ -2,41 +2,35 @@ module Catalyst
 
 using Reexport
 @reexport using JuAFEM, SparseArrays, UnicodePlots, Plots
-@reexport using DataFrames, Tensors, CSV
+@reexport using DataFrames, Tensors, CSV, Parameters
 
-export CatalystCreate, catalystUpdate!
+export CatalystStateODE, CatalystStatePDE, catalystUpdate!
 export doassemble
 
 abstract type CatalystState end
 
-# parametric subtypes with T and curly brackets
-mutable struct CatalystStateODE{T} <: CatalystState
+
+@with_kw mutable struct CatalystStateODE <: CatalystState
     # Store Catalyst properties
-    D_i::T
-    kᵧ::T
-    k::T
-    h::T
-    r::T
-    V::T
-    A::T
-    Δt::T
-    coeff::T
+    D_i::Float64
+    kᵧ::Float64
+    k::Float64
+    h::Int= 1
+    r::Float64
+    V::Float64 = ((4 / 3.0) * pi * r^3)
+    A::Float64 = 4 * pi * r^2
+    Δt::Int = 1
+    coeff::Float64 = (D_i * A * Δt) / (V * h * kᵧ)
     # Store temporary values
-    cᵧ_old::T
+    cᵧ_old::Float64 = 0.0
 end
 
-mutable struct CatalystStatePDE{T} <: CatalystState
+mutable struct CatalystStatePDE <: CatalystState
     # Store Catalyst properties
-    D_i::T
+    D_i::Float64
 	mesh::Grid
 end
 
-function CatalystCreate(D_i, kᵧ, k, r, Δt=1., cᵧ_old = 0.0, h = 1)
-    V = ((4 / 3.0) * pi * r^3)
-    A = 4 * pi * r^2
-    coeff = (D_i * A * Δt) / (V * h * kᵧ)
-    return CatalystStateODE{Float64}(D_i, kᵧ, k, h, r, V, A, Δt, coeff ,cᵧ_old)
-end
 
 function catalystUpdate!(
     cellvalues::JuAFEM.CellScalarValues{dim},

@@ -42,7 +42,7 @@ UnicodePlots.spy(K; height = 15)
 UnicodePlots.spy(M; height = 15)
 nqp = getnquadpoints(cv)
 states =
-    [[CatalystCreate(Dᵢ, kᵧ, k, rᵢ, 1) for _ = 1:nqp] for _ = 1:getncells(grid)]
+    [[CatalystStateODE(D_i=Dᵢ, kᵧ=kᵧ, k=k, r=rᵢ) for _ = 1:nqp] for _ = 1:getncells(grid)]
 
 ch = ConstraintHandler(dh)
 function inputExp(t)

@@ -1,6 +1,6 @@
 using DrWatson
 @quickactivate :Catalyst
-import ProgressMeter.@showprogress
+import ProgressMeter
 
 
 N = (100,)
@@ -70,7 +70,7 @@ store = []
 m = doassemble(states, w, δT, cv, dh)
 
 
-@showprogress for t = 1:Δt:T
+ProgressMeter.@showprogress for t = 1:Δt:T
     update!(ch, t) # load current dbc values from input_exp
 
     m = doassemble(states, w, δT, cv, dh)
@@ -88,8 +88,13 @@ end
 
 function plotAnimation(storage::Array, gifname::String)
     t = 0
-    anim = @animate for field in storage
+	n = length(storage)
+	p = ProgressMeter.Progress(n, 0.5, "Creating a gif...")
+	anim = Animation()
+	for field in storage
         plot(field, ylim = (0, 1), label = "time=$t")
+		frame(anim)
+		ProgressMeter.next!(p)
         t += 1
     end
 

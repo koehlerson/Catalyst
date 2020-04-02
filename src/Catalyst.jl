@@ -31,7 +31,6 @@ mutable struct CatalystStatePDE <: CatalystState
 	mesh::Grid
 end
 
-
 function catalystUpdate!(
     cellvalues::JuAFEM.CellScalarValues{dim},
     dh::JuAFEM.DofHandler,

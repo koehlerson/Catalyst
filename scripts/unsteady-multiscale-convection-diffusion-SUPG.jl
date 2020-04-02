@@ -59,7 +59,7 @@ close!(ch)
 
 K, f = doassemble(Dₑ, w, δT, cv, K, dh)
 M = doassemble(w, δT, cv, M, dh)
-coeff = catalystCoeff(states[50][2])
+coeff = states[50][2].coeff
 
 A = M + (Δt * K) + (Δt*k * M) - (Δt*k * (1 / (1 + coeff)) * coeff * M)
 

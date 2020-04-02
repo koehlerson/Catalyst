@@ -4,11 +4,13 @@ using Reexport
 @reexport using JuAFEM, SparseArrays, UnicodePlots, Plots
 @reexport using DataFrames, Tensors, CSV
 
-export CatalystCreate, catalystCoeff, catalystUpdate!
+export CatalystCreate, catalystUpdate!
 export doassemble
 
+abstract type CatalystState end
+
 # parametric subtypes with T and curly brackets
-mutable struct CatalystState{T}
+mutable struct CatalystStateODE{T} <: CatalystState
     # Store Catalyst properties
     D_i::T
     kᵧ::T
@@ -18,21 +20,22 @@ mutable struct CatalystState{T}
     V::T
     A::T
     Δt::T
+    coeff::T
     # Store temporary values
     cᵧ_old::T
+end
+
+mutable struct CatalystStatePDE{T} <: CatalystState
+    # Store Catalyst properties
+    D_i::T
+	mesh::Grid
 end
 
 function CatalystCreate(D_i, kᵧ, k, r, Δt=1., cᵧ_old = 0.0, h = 1)
     V = ((4 / 3.0) * pi * r^3)
     A = 4 * pi * r^2
-    return CatalystState{Float64}(D_i, kᵧ, k, h, r, V, A, Δt ,cᵧ_old)
-end
-
-function catalystCoeff(Catalyst::CatalystState)
-    return (
-        (Catalyst.D_i * Catalyst.A * Catalyst.Δt) /
-        (Catalyst.V * Catalyst.h * Catalyst.kᵧ)
-    )
+    coeff = (D_i * A * Δt) / (V * h * kᵧ)
+    return CatalystStateODE{Float64}(D_i, kᵧ, k, h, r, V, A, Δt, coeff ,cᵧ_old)
 end
 
 function catalystUpdate!(
@@ -51,7 +54,7 @@ n_basefuncs = getnbasefunctions(cellvalues)
         ce = [c[dof] for dof in dofs]
         for q_point = 1:getnquadpoints(cellvalues)
             cₑ = function_value(cellvalues, q_point, ce)
-            coeff = catalystCoeff(Catalyst[q_point])
+            coeff = Catalyst[q_point].coeff
             cᵧ_old = Catalyst[q_point].cᵧ_old
             cᵧ_new = (1.0 / (1.0 + coeff)) * (cᵧ_old + coeff * cₑ)
             Catalyst[q_point].cᵧ_old = cᵧ_new

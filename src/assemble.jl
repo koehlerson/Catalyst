@@ -83,7 +83,7 @@ function doassemble(
         Catalyst = Catalysts[idx] # get the Catalyst of the element
         for q_point = 1:getnquadpoints(cellvalues)
             dΩ = getdetJdV(cellvalues, q_point)
-            coeff = catalystCoeff(Catalyst[q_point])
+            coeff = Catalyst[q_point].coeff
             cᵧ_old = Catalyst[q_point].cᵧ_old
             k = Catalyst[q_point].k
             for i = 1:n_basefuncs

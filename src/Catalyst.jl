@@ -38,6 +38,8 @@ mutable struct CatalystStatePDE <: CatalystState
 	dh::DofHandler 
 	M::SparseMatrixCSC{Float64,Int64}
 	K::SparseMatrixCSC{Float64,Int64}	
+	A::SparseMatrixCSC{Float64,Int64}	
+	b::Array{Float64,1}
 end
 
 function CatalystStatePDE(D_i, meshString)
@@ -55,9 +57,9 @@ function CatalystStatePDE(D_i, meshString)
 	c_n = zeros(ndofs(dh))
 	w = Vec(0.,0.,0.)
 	δT = 0.0
-	K = doassemble(D_i, w, δT, cv, K, dh)
+	K, b = doassemble(D_i, w, δT, cv, K, dh)
 	M = doassemble(w, δT, cv, M, dh)
-	return CatalystStatePDE(D_i, grid, c_n, 0.0, ip, qr, cv, dh, M, K)
+	return CatalystStatePDE(D_i, grid, c_n, 0.0, ip, qr, cv, dh, M, K, M+K, b)
 end
 
 function catalystUpdate!(
@@ -97,16 +99,42 @@ function catalystUpdate!(
 		ce = [c[dof] for dof in dofs] #element concentration vector
 		for q_point = 1:getnquadpoints(cellvalues)
 			cₑ = function_value(cellvalues, q_point, ce)
-			cᵧ, c_n = microComputation(cₑ, Catalyst[q_point])
-			Catalyst[q_point].c_n = c_n
-			Catalyst[q_point].cᵧ = cᵧ 
+			microComputation!(cₑ, Catalyst[q_point])
 		end
 	end
 end
 
-function microComputation(cₑ::Float64, Catalyst::CatalystStatePDE)
+function microComputation!(cₑ::Float64, Catalyst::CatalystStatePDE)
+	dbc = Dirichlet(:c, getfaceset(grid, "1"), (x, t) -> cₑ)
+	add!(ch, dbc)
+	close!(ch)
+	copyA = copy(Catalyst.A)
 	
+	Catalyst.b = Catalyst.M * Catalyst.c_n #only valid for zero micro source term 
 
+	apply!(copyA, Catalyst.b, ch)
+	cᵢ = copyA \ Catalyst.b
+	cᵧ = 0.0
+    n_basefuncs = getnbasefunctions(Catalyst.cv)
+	@inbounds for (cellcount,cell) in enumerate(CellIterator(Catalyst.dh))
+		reinit!(Catalyst.cv, cell)
+		dofs = celldofs(cell)
+		ce = [cᵢ[dof] for dof in dofs]
+		for face in 1:nfaces(cell)
+			if onboundary(cell,face) && (cellcount, face) ∈ getfaceset(grid,"1")
+                reinit!(facevalues, cell, face)
+				for q_point = 1:getnquadpoints(Catalyst.cv)
+					∇cᵢ = function_gradient(Catalyst.cv, q_point, ce)
+					n = getnormal(facevalues, q_point)
+					dΓ = getdetJdV(facevalues,q_point)
+					cᵧ += Catalyst.D_i * (∇cᵢ ⋅ n) * dΓ
+				end
+			end
+		end
+	end
+	
+	Catalyst.c_n = cᵢ:w
+	Catalyst.cᵧ = cᵧ	
 end
 
 include("assemble.jl")

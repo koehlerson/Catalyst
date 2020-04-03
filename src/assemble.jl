@@ -18,7 +18,7 @@ function doassemble(
                 ∇v = shape_gradient(cellvalues, q_point, i)
                 for j = 1:n_basefuncs
                     c = shape_value(cellvalues, q_point, j)
-                    Me[i, j] += c ⋅ v * dΩ  + c ⋅ w ⋅ ∇v ⋅ δT * dΩ
+					Me[i, j] += c * v * dΩ  + c * (w ⋅ ∇v) * δT * dΩ
                 end
             end
         end
@@ -29,12 +29,12 @@ end
 
 function doassemble(
     D::Float64,
-    w::Float64,
+    w,
     δT::Float64,
     cellvalues::JuAFEM.CellScalarValues{dim},
     K::SparseMatrixCSC,
     dh::DofHandler,
-    R::Float64 = 0
+    R::Float64 = 0.0
 ) where {dim}
     n_basefuncs = getnbasefunctions(cellvalues)
     Ke = zeros(n_basefuncs, n_basefuncs)
@@ -50,14 +50,14 @@ function doassemble(
             for i = 1:n_basefuncs
                 v = shape_value(cellvalues, q_point, i)
                 ∇v = shape_gradient(cellvalues, q_point, i)
-                fe[i] += R * v * dΩ + R * (δT * w ⋅ ∇v) * dΩ
+                fe[i] += R * v * dΩ + R * δT * (w ⋅ ∇v) * dΩ
                 for j = 1:n_basefuncs
                     c = shape_value(cellvalues, q_point, j)
                     ∇c = shape_gradient(cellvalues, q_point, j)
                     Ke[i, j] +=
                         D * (∇v ⋅ ∇c) * dΩ +
-                        w ⋅ ∇c ⋅ v * dΩ +
-                        w ⋅ ∇c ⋅ (δT ⋅ w ⋅ ∇v) * dΩ
+						(w ⋅ ∇c) * v * dΩ +
+						(w ⋅ ∇c) * (δT * (w ⋅ ∇v)) * dΩ
                 end
             end
         end

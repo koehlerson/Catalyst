@@ -1,24 +1,12 @@
-include("../src/Parser.jl")
+using DrWatson
+@quickactivate :Catalyst
 
-grid = getGrid("test.msh")
-dh  = DofHandler(grid)
-push!(dh, :c, 1)
-close!(dh)
+include(srcdir("Parser.jl"))
 
-dh = DofHandler(grid)
-push!(dh, :u, 3)
-close!(dh)
-dbcs = ConstraintHandler(dh)
-add!(dbcs, Dirichlet(:u, getfaceset(grid, "4"), (x,t) -> [0.0, 0.0, 0.0], [1, 2, 3]))
-close!(dbcs)
+grid = Parser.getGrid("test/catalyst.msh")
 
-vtk = vtk_grid("face-test", grid)
-vtk_point_data(vtk, dbcs)
-vtk_save(vtk)
-
-dim = 3
-ip = Lagrange{dim, RefTetrahedron, 1}()
-qr = QuadratureRule{dim, RefTetrahedron}(2)
+ip = Lagrange{3, RefTetrahedron, 1}()
+qr = QuadratureRule{3, RefTetrahedron}(2)
 cellvalues = CellScalarValues(qr, ip);
 
 dh = DofHandler(grid)
@@ -26,65 +14,29 @@ push!(dh, :u, 1)
 close!(dh);
 
 K = create_sparsity_pattern(dh);
-
-using UnicodePlots
-fill!(K.nzval, 1.0)
-spy(K; height = 15)
+M = create_sparsity_pattern(dh);
 
 ch = ConstraintHandler(dh);
 
-∂Ω = union(getfaceset.((grid, ), ["1", "2","3", "4", "5", "6"])...);
-dbc1 = Dirichlet(:u, ∂Ω, (x, t) -> 0.0)
-add!(ch, dbc1);
-
-∂Ω = union(getfaceset.((grid, ), ["7"])...);
-dbc2 = Dirichlet(:u, ∂Ω, (x, t) -> 1.0)
-add!(ch, dbc2);
+∂Ω = getfaceset(grid, "1");
+dbc = Dirichlet(:u, ∂Ω, (x, t) -> 1.5)
+add!(ch, dbc);
 
 close!(ch)
 update!(ch, 0.0);
 
-function doassemble(cellvalues::CellScalarValues{dim}, K::SparseMatrixCSC, dh::DofHandler) where {dim}
+D_i = 0.1
+w = [0.,0.,0.]
+δT = 0.
+K, f = doassemble(D_i, w, δT,cellvalues, K, dh);
+M = doassemble(w, δT, cellvalues, M, dh);
+u_0 = ones(ndofs(dh)).*0.1
+f += M*u_0
+A = K + M
 
-    n_basefuncs = getnbasefunctions(cellvalues)
-    Ke = zeros(n_basefuncs, n_basefuncs)
-    fe = zeros(n_basefuncs)
+apply!(A, f, ch)
+u = A \ f;
 
-    f = zeros(ndofs(dh))
-    assembler = start_assemble(K, f)
-
-    @inbounds for cell in CellIterator(dh)
-
-        fill!(Ke, 0)
-        fill!(fe, 0)
-
-        reinit!(cellvalues, cell)
-
-        for q_point in 1:getnquadpoints(cellvalues)
-            dΩ = getdetJdV(cellvalues, q_point)
-
-            for i in 1:n_basefuncs
-                v  = shape_value(cellvalues, q_point, i)
-                ∇v = shape_gradient(cellvalues, q_point, i)
-                fe[i] += 0 * dΩ
-                for j in 1:n_basefuncs
-                    ∇u = shape_gradient(cellvalues, q_point, j)
-                    Ke[i, j] += (∇v ⋅ ∇u) * dΩ
-                    Ke[i, j] *= 10000 # conductivity 
-                end
-            end
-        end
-
-        assemble!(assembler, celldofs(cell), fe, Ke)
-    end
-    return K, f
-end
-
-K, f = doassemble(cellvalues, K, dh);
-
-apply!(K, f, ch)
-u = K \ f;
-
-vtk_grid("heat_equation", dh) do vtk
+vtk_grid("heat_equation_catalyst", dh) do vtk
     vtk_point_data(vtk, dh, u)
 end

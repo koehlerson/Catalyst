@@ -4,7 +4,7 @@ using Reexport
 @reexport using JuAFEM, SparseArrays, UnicodePlots, Plots
 @reexport using DataFrames, Tensors, CSV, Parameters
 
-using Parser
+include("Parser.jl")
 export CatalystStateODE, CatalystStatePDE, catalystUpdate!
 export doassemble
 
@@ -26,30 +26,35 @@ abstract type CatalystState end
     cᵧ_old::Float64 = 0.0
 end
 
-mutable struct CatalystStatePDE <: CatalystState
+@with_kw mutable struct CatalystStatePDE <: CatalystState
     # Store Catalyst properties
     D_i::Float64
 	mesh::Grid
 	c_n::Array{Float64,1}
 	cᵧ::Float64
 	ip::Lagrange{3,RefTetrahedron,1}
-	qr::QuadratureRule{3,RefTetrahedron} 
+	qr::QuadratureRule{3,RefTetrahedron,Float64} 
+	qr_face::QuadratureRule{2,RefTetrahedron,Float64}
 	cv::CellScalarValues 
+	fv::FaceScalarValues
 	dh::DofHandler 
 	M::SparseMatrixCSC{Float64,Int64}
 	K::SparseMatrixCSC{Float64,Int64}	
 	A::SparseMatrixCSC{Float64,Int64}	
-	b::Array{Float64,1}
+	f::Array{Float64,1}
 end
 
-function CatalystStatePDE(D_i, meshString)
-	grid = getGrid(meshString)
+function CatalystStatePDE(D_i::Float64, meshString::String)
+	microMesh = Parser.getGrid(meshString)
 		
-	ip = Lagrange{3,RefTetrahedron,1}() #Interpolation
-	qr = QuadratureRule{3,RefTetrahedron}(2) #QuadratureRule
-	cv = CellScalarValues(qr, ip) #FEValues
-	dh = DofHandler(grid)
-	push!(dh, :c, 1) #add concentration field
+	ip = Lagrange{3, RefTetrahedron, 1}()
+	qr = QuadratureRule{3, RefTetrahedron}(2)
+	qr_face = QuadratureRule{2,RefTetrahedron}(2) #QuadratureRule
+	cv = CellScalarValues(qr, ip)
+	fv = FaceScalarValues(qr_face, ip) #FEValues
+
+	dh = DofHandler(microMesh)
+	push!(dh, :c, 1)
 	close!(dh)
 	
 	K = create_sparsity_pattern(dh)
@@ -57,9 +62,12 @@ function CatalystStatePDE(D_i, meshString)
 	c_n = zeros(ndofs(dh))
 	w = Vec(0.,0.,0.)
 	δT = 0.0
-	K, b = doassemble(D_i, w, δT, cv, K, dh)
-	M = doassemble(w, δT, cv, M, dh)
-	return CatalystStatePDE(D_i, grid, c_n, 0.0, ip, qr, cv, dh, M, K, M+K, b)
+	K, f = doassemble(D_i, w, δT, cv, K, dh);
+	M = doassemble(w, δT, cv, M, dh);
+	A = K + M
+	return CatalystStatePDE(D_i=D_i, mesh=microMesh, c_n=c_n, cᵧ=0.0, ip=ip, qr=qr, 
+							qr_face=qr_face, cv=cv, fv=fv, dh=dh, M=M, 
+							K=K, A=A, f=f)
 end
 
 function catalystUpdate!(
@@ -105,35 +113,42 @@ function catalystUpdate!(
 end
 
 function microComputation!(cₑ::Float64, Catalyst::CatalystStatePDE)
-	dbc = Dirichlet(:c, getfaceset(grid, "1"), (x, t) -> cₑ)
-	add!(ch, dbc)
+	ch = ConstraintHandler(Catalyst.dh);
+	
+	∂Ω = getfaceset(Catalyst.mesh, "1");
+	dbc = Dirichlet(:c, ∂Ω, (x, t) -> cₑ)
+	add!(ch, dbc);	
 	close!(ch)
+	update!(ch, 0.0);
+
 	copyA = copy(Catalyst.A)
 	
-	Catalyst.b = Catalyst.M * Catalyst.c_n #only valid for zero micro source term 
+	b = Catalyst.M * Catalyst.c_n #only valid for zero micro source term 
 
-	apply!(copyA, Catalyst.b, ch)
-	cᵢ = copyA \ Catalyst.b
+	apply!(copyA, b, ch)
+	cᵢ = copyA \ b
+
 	cᵧ = 0.0
     n_basefuncs = getnbasefunctions(Catalyst.cv)
+
 	@inbounds for (cellcount,cell) in enumerate(CellIterator(Catalyst.dh))
 		reinit!(Catalyst.cv, cell)
 		dofs = celldofs(cell)
 		ce = [cᵢ[dof] for dof in dofs]
 		for face in 1:nfaces(cell)
-			if onboundary(cell,face) && (cellcount, face) ∈ getfaceset(grid,"1")
-                reinit!(facevalues, cell, face)
-				for q_point = 1:getnquadpoints(Catalyst.cv)
-					∇cᵢ = function_gradient(Catalyst.cv, q_point, ce)
-					n = getnormal(facevalues, q_point)
-					dΓ = getdetJdV(facevalues,q_point)
+			if (cellcount, face) ∈ getfaceset(Catalyst.mesh,"1")
+                reinit!(Catalyst.fv, cell, face)
+				for q_point = 1:getnquadpoints(Catalyst.fv)
+					∇cᵢ = function_gradient(Catalyst.fv, q_point, ce)
+					n = getnormal(Catalyst.fv, q_point)
+					dΓ = getdetJdV(Catalyst.fv,q_point)
 					cᵧ += Catalyst.D_i * (∇cᵢ ⋅ n) * dΓ
 				end
 			end
 		end
 	end
 	
-	Catalyst.c_n = cᵢ:w
+	Catalyst.c_n = cᵢ
 	Catalyst.cᵧ = cᵧ	
 end
 

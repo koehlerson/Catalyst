@@ -1,6 +1,6 @@
-using JuAFEM, DataFrames 
-
 module Parser
+
+using JuAFEM, DataFrames 
 
 LinTetra = Dict(1 => 3, 2 => 4, 3 => 2, 4 => 1) #maps missing node to local faceid
 

@@ -36,10 +36,7 @@ close!(dh)
 
 K = create_sparsity_pattern(dh)
 M = create_sparsity_pattern(dh)
-fill!(K.nzval, 1.0)
-fill!(M.nzval, 1.0)
-UnicodePlots.spy(K; height = 15)
-UnicodePlots.spy(M; height = 15)
+
 nqp = getnquadpoints(cv)
 states =
     [[CatalystStateODE(D_i=Dᵢ, kᵧ=kᵧ, k=k, r=rᵢ) for _ = 1:nqp] for _ = 1:getncells(grid)]

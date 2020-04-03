@@ -34,8 +34,8 @@ function doassemble(
     cellvalues::JuAFEM.CellScalarValues{dim},
     K::SparseMatrixCSC,
     dh::DofHandler,
+    R::Float64 = 0
 ) where {dim}
-    R = 0
     n_basefuncs = getnbasefunctions(cellvalues)
     Ke = zeros(n_basefuncs, n_basefuncs)
     fe = zeros(n_basefuncs)

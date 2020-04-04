@@ -100,3 +100,15 @@ function doassemble(
     end
     return m
 end
+
+function volume(dh::DofHandler, cv::CellScalarValues)
+	dΩ = 0
+	@inbounds for cell in CellIterator(dh)
+		reinit!(cv, cell)
+		for q_point = 1:3
+			dΩ += getdetJdV(cv, q_point)
+		end
+	end
+	return dΩ
+end
+

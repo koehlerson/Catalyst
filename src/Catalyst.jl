@@ -45,6 +45,7 @@ end
 end
 
 function CatalystStatePDE(D_i::Float64, meshString::String)
+""" everything in micrometers """
 	microMesh = Parser.getGrid(meshString)
 		
 	ip = Lagrange{3, RefTetrahedron, 1}()
@@ -62,10 +63,10 @@ function CatalystStatePDE(D_i::Float64, meshString::String)
 	c_n = zeros(ndofs(dh))
 	w = Vec(0.,0.,0.)
 	δT = 0.0
-	K, f = doassemble(D_i, w, δT, cv, K, dh);
+	K, f = doassemble(D_i*(1e6)^2, w, δT, cv, K, dh);
 	M = doassemble(w, δT, cv, M, dh);
 	A = K + M
-	return CatalystStatePDE(D_i=D_i, mesh=microMesh, c_n=c_n, cᵧ=0.0, ip=ip, qr=qr, 
+	return CatalystStatePDE(D_i=D_i*(1e6)^2, mesh=microMesh, c_n=c_n, cᵧ=0.0, ip=ip, qr=qr, 
 							qr_face=qr_face, cv=cv, fv=fv, dh=dh, M=M, 
 							K=K, A=A, f=f)
 end

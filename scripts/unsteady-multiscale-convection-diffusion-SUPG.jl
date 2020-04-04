@@ -65,13 +65,14 @@ c_n = copy(c_0)
 
 store = []
 m = doassemble(states, w, δT, cv, dh)
-
+store_m = []
 
 ProgressMeter.@showprogress for t = 1:Δt:T
     update!(ch, t) # load current dbc values from input_exp
 
     m = doassemble(states, w, δT, cv, dh)
-    global b = Δt * f + M * c_n + Δt*m # get the discrete rhs
+	push!(store_m, m)
+	global b = Δt * f + M * c_n + Δt*m # get the discrete rhs
 
     copyA = copy(A)
     apply!(copyA, b, ch) # apply time-dependent dbc

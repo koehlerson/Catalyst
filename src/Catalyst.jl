@@ -2,7 +2,8 @@ module Catalyst
 
 using Reexport
 @reexport using JuAFEM, SparseArrays, UnicodePlots, Plots
-@reexport using DataFrames, Tensors, CSV, Parameters
+@reexport using DataFrames, Tensors, CSV, Parameters, IterativeSolvers
+@reexport using AlgebraicMultigrid
 using DrWatson
 import ProgressMeter
 
@@ -131,7 +132,7 @@ function microComputation!(cₑ::Float64, Catalyst::CatalystStatePDE)
 	b = Catalyst.M * Catalyst.c_n #only valid for zero micro source term 
 
 	apply!(copyA, b, ch)
-	cᵢ = copyA \ b
+	cᵢ = cg(copyA, b)
 
 	cᵧ = 0.0
     n_basefuncs = getnbasefunctions(Catalyst.cv)

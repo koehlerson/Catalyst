@@ -63,7 +63,7 @@ function solve(Dᵢ::Float64, k::Float64, input_exp::Array, output_exp::Array;
 	
 	    copyA = copy(A)
 	    apply!(copyA, b, ch) # apply time-dependent dbc
-	    c = copyA \ b # solve the current time step
+		c = gmres(copyA, b) # solve the current time step
 	
 	    catalystUpdate!(cv, dh, c, states, t)
 	

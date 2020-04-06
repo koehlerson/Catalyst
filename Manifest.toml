@@ -1,10 +1,22 @@
 # This file is machine-generated - editing it directly is not advised
 
+[[AMD]]
+deps = ["Libdl", "LinearAlgebra", "SparseArrays", "Test"]
+git-tree-sha1 = "7b8e22e91af4ccbfbcae87c36d141441defe6f0f"
+uuid = "14f7f29c-3bd6-536c-9a0b-7339e30b5a3e"
+version = "0.3.1"
+
 [[AbstractFFTs]]
 deps = ["LinearAlgebra"]
 git-tree-sha1 = "051c95d6836228d120f5f4b984dd5aba1624f716"
 uuid = "621f4979-c628-5d54-868e-fcf4e3e8185c"
 version = "0.5.0"
+
+[[AlgebraicMultigrid]]
+deps = ["Compat", "IterativeSolvers", "Random"]
+git-tree-sha1 = "a26560b0f8cb9104d96715c32f7c272504631ea9"
+uuid = "2169fc97-5a83-5252-b627-83903c6c433c"
+version = "0.2.2"
 
 [[Arpack]]
 deps = ["Arpack_jll", "Libdl", "LinearAlgebra"]
@@ -323,6 +335,12 @@ git-tree-sha1 = "05110a2ab1fc5f932622ffea2a003221f4782c18"
 uuid = "c8e1da08-722c-5040-9ed9-7db0dc04731e"
 version = "1.3.0"
 
+[[IterativeSolvers]]
+deps = ["LinearAlgebra", "Printf", "Random", "RecipesBase", "SparseArrays"]
+git-tree-sha1 = "3b7e2aac8c94444947facea7cc7ca91c49169be0"
+uuid = "42fd0dbc-a981-5370-80f2-aaf504508153"
+version = "0.8.4"
+
 [[IteratorInterfaceExtensions]]
 git-tree-sha1 = "a3f24677c21f5bbe9d2a714f95dcd58337fb2856"
 uuid = "82899510-4779-5014-852e-03e436cf321d"
@@ -336,7 +354,7 @@ version = "0.21.0"
 
 [[JuAFEM]]
 deps = ["LinearAlgebra", "Reexport", "SparseArrays", "Tensors", "WriteVTK"]
-path = "/home/max/.julia/dev/JuAFEM"
+path = "/home/mkoehler/.julia/dev/JuAFEM"
 uuid = "30d91d44-8115-11e8-1d28-c19a5ac16de8"
 version = "0.2.0"
 
@@ -375,6 +393,12 @@ deps = ["BinaryProvider", "Libdl"]
 git-tree-sha1 = "be855e3c975b89746b09952407c156b5e4a33a1d"
 uuid = "9c8b4983-aa76-5018-a973-4c85ecc9e179"
 version = "0.8.1"
+
+[[LimitedLDLFactorizations]]
+deps = ["AMD", "LinearAlgebra", "SparseArrays"]
+git-tree-sha1 = "09019ebe6a52d4dc3dc014e0b29f590eeb7f3cce"
+uuid = "f5a24dde-3ab7-510b-b81b-6a72c6098d3b"
+version = "0.3.0"
 
 [[LineSearches]]
 deps = ["LinearAlgebra", "NLSolversBase", "NaNMath", "Parameters", "Printf", "Test"]
@@ -513,9 +537,9 @@ uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 
 [[PlotThemes]]
 deps = ["PlotUtils", "Requires", "Statistics"]
-git-tree-sha1 = "493bd54296a33d7575f5f7e488d30ffd9d05dc45"
+git-tree-sha1 = "87a4ea7f8c350d87d3a8ca9052663b633c0b2722"
 uuid = "ccf2f8ad-2431-5c83-bf29-c5338b663b6a"
-version = "1.0.2"
+version = "1.0.3"
 
 [[PlotUtils]]
 deps = ["Colors", "Dates", "Printf", "Random", "Reexport"]
@@ -540,6 +564,12 @@ deps = ["LinearAlgebra", "Test"]
 git-tree-sha1 = "127c47b91990c101ee3752291c4f45640eeb03d1"
 uuid = "85a6dd25-e78a-55b7-8502-1745935b8125"
 version = "0.2.3"
+
+[[Preconditioners]]
+deps = ["AlgebraicMultigrid", "Compat", "LimitedLDLFactorizations", "LinearAlgebra", "SparseArrays"]
+git-tree-sha1 = "19b4944292f0a8352cff07c11eaa931eaef6fb4f"
+uuid = "af69fa37-3177-5a40-98ee-561f696e4fcd"
+version = "0.3.0"
 
 [[Printf]]
 deps = ["Unicode"]

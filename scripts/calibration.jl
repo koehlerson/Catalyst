@@ -3,7 +3,6 @@ using DrWatson
 
 using PyCall
 cma = pyimport("cma")
-
 input_exp = []
 output_exp = []
 for row in CSV.File(datadir("experiment/new-data.csv"); delim = " ")
@@ -13,18 +12,18 @@ end
 
 
 Init = [1e-13, 0.1]
-config = Dict("bounds"=>[1e-16, 1e-6])
-es = cma.CMAEvolutionStrategy(Init, 1e-7)
+opts = cma.CMAOptions()
+opts["bounds"] = [[1e-18, 0], [1e-10, 1]]
+es = cma.CMAEvolutionStrategy(Init, 1e-11, opts)
 
 while isempty(es.stop())
 	solutions = es.ask()
 	#es.tell(solutions, [solve(x, ) for x in solutions]) #fill with simulation functiono
 	fitness = zeros(length(solutions))
 	println(length(solutions))
-	Threads.@threads for i in 1:length(solutions)
-		#id = Threads.threadid()
+	for i in 1:length(solutions)
 		ind_fittness = Catalyst.solve(solutions[i][1], solutions[i][2],
-							 input_exp, output_exp, progress=false)
+								 input_exp, output_exp, progress=true, calibration=true)
 		fitness[i] = ind_fittness
 	end
 	es.tell(solutions,fitness)

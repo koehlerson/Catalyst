@@ -67,7 +67,7 @@ function doassemble(
 end
 
 function doassemble(
-    Catalysts,
+	Catalysts::Array{Array{CatalystStateODE,1},1},
     w::Float64,
     δT::Float64,
     cellvalues::JuAFEM.CellScalarValues{dim},
@@ -101,11 +101,41 @@ function doassemble(
     return m
 end
 
+function doassemble(
+	Catalysts::Array{Array{CatalystStatePDE,1},1},
+    w::Float64,
+    δT::Float64,
+    cellvalues::JuAFEM.CellScalarValues{dim},
+    dh::DofHandler,
+) where {dim}
+    n_basefuncs = getnbasefunctions(cellvalues)
+    me = zeros(n_basefuncs)
+    m = zeros(ndofs(dh))
+    @inbounds for cell in CellIterator(dh)
+        fill!(me, 0.0)
+        reinit!(cellvalues, cell)
+        idx = cell.current_cellid.x
+        Catalyst = Catalysts[idx] # get the Catalyst of the element
+        for q_point = 1:getnquadpoints(cellvalues)
+            dΩ = getdetJdV(cellvalues, q_point)
+            cᵧ = Catalyst[q_point].cᵧ
+            #k = Catalyst[q_point].k
+            for i = 1:n_basefuncs
+                v = shape_value(cellvalues, q_point, i)
+                ∇v = shape_gradient(cellvalues, q_point, i)
+				me[i] += cᵧ * v * dΩ + cᵧ * δT * (w ⋅ ∇v) * dΩ
+            end
+
+        end
+        assemble!(m, celldofs(cell), me)
+    end
+    return m
+end
 function volume(dh::DofHandler, cv::CellScalarValues)
 	dΩ = 0
 	@inbounds for cell in CellIterator(dh)
 		reinit!(cv, cell)
-		for q_point = 1:3
+		for q_point = 1:getnquadpoints(cv)
 			dΩ += getdetJdV(cv, q_point)
 		end
 	end

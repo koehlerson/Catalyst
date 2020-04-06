@@ -84,20 +84,6 @@ ProgressMeter.@showprogress for t = 1:Δt:T
     global c_n = copy(c) # update time step
 end
 
-function plotAnimation(storage::Array, gifname::String)
-    t = 0
-	n = length(storage)
-	p = ProgressMeter.Progress(n, 0.5, "Creating a gif...")
-	anim = Animation()
-	for field in storage
-        plot(field, ylim = (0, 1), label = "time=$t")
-		frame(anim)
-		ProgressMeter.next!(p)
-        t += 1
-    end
-
-    gif(anim, gifname, fps = 30)
-end
 
 
 plotAnimation(store, "done.gif")

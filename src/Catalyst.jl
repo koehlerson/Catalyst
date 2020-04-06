@@ -3,6 +3,8 @@ module Catalyst
 using Reexport
 @reexport using JuAFEM, SparseArrays, UnicodePlots, Plots
 @reexport using DataFrames, Tensors, CSV, Parameters
+using DrWatson
+import ProgressMeter
 
 include("Parser.jl")
 export CatalystStateODE, CatalystStatePDE, catalystUpdate!
@@ -100,7 +102,9 @@ function catalystUpdate!(
 	dh::DofHandler,
 	c::AbstractVector,
 	Catalysts::Array{Array{CatalystStatePDE,1},1},
+	t::Number
 ) where {dim}
+	n = length(CellIterator(dh))
 	@inbounds for cell in CellIterator(dh)
 		Catalyst = Catalysts[cell.current_cellid.x]
 		reinit!(cellvalues, cell)
@@ -117,7 +121,7 @@ function microComputation!(cₑ::Float64, Catalyst::CatalystStatePDE)
 	ch = ConstraintHandler(Catalyst.dh);
 	
 	∂Ω = getfaceset(Catalyst.mesh, "1");
-	dbc = Dirichlet(:c, ∂Ω, (x, t) -> cₑ)
+	dbc = Dirichlet(:c, ∂Ω, (x, t) -> cₑ*(1e-6)^3)
 	add!(ch, dbc);	
 	close!(ch)
 	update!(ch, 0.0);
@@ -150,9 +154,11 @@ function microComputation!(cₑ::Float64, Catalyst::CatalystStatePDE)
 	end
 	
 	Catalyst.c_n = cᵢ
-	Catalyst.cᵧ = cᵧ	
+	Catalyst.cᵧ = cᵧ / (pi*(0.25e-6)^3*(1e6)^3)
 end
 
 include("assemble.jl")
+include("solver.jl")
+include("visualization.jl")
 
 end 

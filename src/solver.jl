@@ -2,7 +2,7 @@ function solve(Dᵢ::Float64, k::Float64, input_exp::Array, output_exp::Array;
 			   N=(100,), L=5e-2, w=1.9128e-4 * (1 / 0.37), 
 			   T = 1000, Δt=1, Dₑ=1e-9, rᵢ=2.15e-7, 
 			   h= L/N[1], δT = h/(2 * abs(w)),
-			   progress=true,	
+			   progress=true, calibration=false,
 			   microMesh=projectdir("test/catalyst.msh")) 
 		
 	left = zero(Vec{1})
@@ -50,6 +50,10 @@ function solve(Dᵢ::Float64, k::Float64, input_exp::Array, output_exp::Array;
 	if progress==true
 		p = ProgressMeter.Progress(T, 0.5, "macro-scale progress...")
 	end
+	
+	if calibration==true
+		error = 0
+	end
 
 	for t = 1:Δt:T
 	    update!(ch, t) # load current dbc values from input_exp
@@ -70,8 +74,15 @@ function solve(Dᵢ::Float64, k::Float64, input_exp::Array, output_exp::Array;
 		if progress==true
 			ProgressMeter.next!(p)
 		end
-
+		
+		if calibration==true
+			error += (c[end] - inputExp(t))^2 
+		end 
 	end
-
-	return store, store_m 
+	
+	if calibration==true
+		return error/T
+	else
+		return store, store_m
+	end
 end

@@ -32,6 +32,7 @@ end
 @with_kw mutable struct CatalystStatePDE <: CatalystState
     # Store Catalyst properties
     D_i::Float64
+	k_γ::Float64
 	mesh::Grid
 	c_n::Array{Float64,1}
 	cᵧ::Float64
@@ -47,9 +48,8 @@ end
 	f::Array{Float64,1}
 end
 
-function CatalystStatePDE(D_i::Float64, meshString::String)
-""" everything in micrometers """
-	microMesh = Parser.getGrid(meshString)
+function CatalystStatePDE(D_i::Float64, k_γ::Float64, mesh::Grid)
+	microMesh = mesh
 		
 	ip = Lagrange{3, RefTetrahedron, 1}()
 	qr = QuadratureRule{3, RefTetrahedron}(2)
@@ -66,10 +66,10 @@ function CatalystStatePDE(D_i::Float64, meshString::String)
 	c_n = zeros(ndofs(dh))
 	w = Vec(0.,0.,0.)
 	δT = 0.0
-	K, f = doassemble(D_i*(1e6)^2, w, δT, cv, K, dh);
+	K, f = doassemble(D_i, w, δT, cv, K, dh);
 	M = doassemble(w, δT, cv, M, dh);
-	A = K + M
-	return CatalystStatePDE(D_i=D_i*(1e6)^2, mesh=microMesh, c_n=c_n, cᵧ=0.0, ip=ip, qr=qr, 
+	A = K + k_γ*M
+	return CatalystStatePDE(D_i=D_i, k_γ=k_γ, mesh=microMesh, c_n=c_n, cᵧ=0.0, ip=ip, qr=qr, 
 							qr_face=qr_face, cv=cv, fv=fv, dh=dh, M=M, 
 							K=K, A=A, f=f)
 end
@@ -122,14 +122,14 @@ function microComputation!(cₑ::Float64, Catalyst::CatalystStatePDE)
 	ch = ConstraintHandler(Catalyst.dh);
 	
 	∂Ω = getfaceset(Catalyst.mesh, "1");
-	dbc = Dirichlet(:c, ∂Ω, (x, t) -> cₑ*(1e-6)^3)
+	dbc = Dirichlet(:c, ∂Ω, (x, t) -> cₑ)
 	add!(ch, dbc);	
 	close!(ch)
 	update!(ch, 0.0);
 
 	copyA = copy(Catalyst.A)
 	
-	b = Catalyst.M * Catalyst.c_n #only valid for zero micro source term 
+	b = Catalyst.k_γ*(Catalyst.M * Catalyst.c_n) #only valid for zero micro source term 
 
 	apply!(copyA, b, ch)
 	cᵢ = cg(copyA, b)
@@ -155,7 +155,7 @@ function microComputation!(cₑ::Float64, Catalyst::CatalystStatePDE)
 	end
 	
 	Catalyst.c_n = cᵢ
-	Catalyst.cᵧ = cᵧ / (pi*(0.25e-6)^3*(1e6)^3)
+	Catalyst.cᵧ = cᵧ 
 end
 
 include("assemble.jl")

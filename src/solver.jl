@@ -1,9 +1,10 @@
-function solve(Dᵢ::Float64, k::Float64, input_exp::Array, output_exp::Array;
+function solve(Dᵢ::Float64, k::Float64, kᵧ::Float64, 
+			   input_exp::Array, output_exp::Array;
 			   N=(100,), L=5e-2, w=1.9128e-4 * (1 / 0.37), 
 			   T = 1000, Δt=1, Dₑ=1e-9, rᵢ=2.15e-7, 
 			   h= L/N[1], δT = h/(2 * abs(w)),
 			   progress=true, calibration=false,
-			   microMesh=projectdir("test/catalyst.msh")) 
+			   microMesh=Parser.getGrid(projectdir("test/catalyst.msh"))) 
 		
 	left = zero(Vec{1})
 	right = L * ones(Vec{1})
@@ -21,7 +22,7 @@ function solve(Dᵢ::Float64, k::Float64, input_exp::Array, output_exp::Array;
 	
 	nqp = getnquadpoints(cv)
 	states =
-	    [[CatalystStatePDE(Dᵢ, microMesh) for _ = 1:nqp] for _ = 1:getncells(grid)]
+	    [[CatalystStatePDE(Dᵢ, kᵧ, microMesh) for _ = 1:nqp] for _ = 1:getncells(grid)]
 	
 	ch = ConstraintHandler(dh)
 
@@ -81,7 +82,7 @@ function solve(Dᵢ::Float64, k::Float64, input_exp::Array, output_exp::Array;
 	end
 	
 	if calibration==true
-		return error/T
+		return error
 	else
 		return store, store_m
 	end

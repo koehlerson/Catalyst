@@ -5,6 +5,7 @@ function solve(Dᵢ::Float64, k::Float64, kᵧ::Float64,
 			   h= L/N[1], δT = h/(2 * abs(w)),
 			   progress=true, calibration=false,
 			   microSave=false, microSaveTime = (250, 300, 350, 400),
+			   microSaveLocation=((10,1), (40,1), (80,1)),
 			   microMesh=Parser.getGrid(projectdir("test/catalyst.msh"))) 
 		
 	left = zero(Vec{1})
@@ -77,19 +78,24 @@ function solve(Dᵢ::Float64, k::Float64, kᵧ::Float64,
 			ProgressMeter.next!(p)
 		end
 		
-<<<<<<< HEAD
 		if calibration
 			error += (c[end] - output_exp[t])^2 
 		end 
 	
 		if t in microSaveTime && microSave
-			vtk = vtk_grid(name, dofhandler)	##TODO change name and dofhandler
-			vtk_point_data(vtk, dofhandler, c_n, "") ##TODO change dofhandler and c_n
-			vtk_save(vtk)
-=======
+			for microPoints in microSaveLocation
+				catalyst = states[microPoints[1]][microPoints[2]]
+				name = (time=t, ele=microPoints[1], D_i=catalyst.D_i,
+						k=k, k_gamma=catalyst.k_γ)
+				name = savename(name)
+				vtk = vtk_grid(datadir("simulation/micro_Catalyst_$name"), catalyst.dh)
+				vtk_point_data(vtk, catalyst.dh, catalyst.c_n, "") 
+				vtk_save(vtk)
+			end
+		end
+
 		if calibration==true
 			error += (c[end] - output_exp[t])^2 
->>>>>>> 1a689e11e004f82ad5eadbd783fba5337829be6f
 		end 
 	end
 	

@@ -22,12 +22,13 @@ es = cma.CMAEvolutionStrategy(Init, 1e1, opts)
 while isempty(es.stop())
 	solutions = es.ask()
 	fitness = zeros(length(solutions))
-	
-	Threads.@threads for i in 1:length(solutions)
+	p = ProgressMeter.Progress(length(solutions), 0.5, "evaluating individiuals...")
+	for i in 1:length(solutions)
 		ind_fittness = Catalyst.solve(solutions[i][1]*1e-1, solutions[i][2], solutions[i][3],
-								 input_exp, output_exp, progress=false, calibration=true,
+								 input_exp, output_exp, w=1.9128e-4, progress=false, calibration=true,
 								 microMesh=microMesh)
 		fitness[i] = ind_fittness
+		ProgressMeter.next!(p)
 	end
 
 	es.tell(solutions,fitness)

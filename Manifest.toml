@@ -354,7 +354,7 @@ version = "0.21.0"
 
 [[JuAFEM]]
 deps = ["LinearAlgebra", "Reexport", "SparseArrays", "Tensors", "WriteVTK"]
-path = "/home/mkoehler/.julia/dev/JuAFEM"
+path = "/home/max/.julia/dev/JuAFEM"
 uuid = "30d91d44-8115-11e8-1d28-c19a5ac16de8"
 version = "0.2.0"
 

@@ -4,6 +4,7 @@ function solve(Dᵢ::Float64, k::Float64, kᵧ::Float64,
 			   T = 1000, Δt=1, Dₑ=1e-9, rᵢ=2.15e-7, 
 			   h= L/N[1], δT = h/(2 * abs(w)),
 			   progress=true, calibration=false,
+			   microSave=false, microSaveTime = (250, 300, 350, 400),
 			   microMesh=Parser.getGrid(projectdir("test/catalyst.msh"))) 
 		
 	left = zero(Vec{1})
@@ -72,16 +73,22 @@ function solve(Dᵢ::Float64, k::Float64, kᵧ::Float64,
 		push!(store_m, m) # store current solution
 	    c_n = copy(c) # update time step
 
-		if progress==true
+		if progress
 			ProgressMeter.next!(p)
 		end
 		
-		if calibration==true
-			error += (c[end] - inputExp(t))^2 
+		if calibration
+			error += (c[end] - output_exp[t])^2 
+		end 
+	
+		if t in microSaveTime && microSave
+			vtk = vtk_grid(name, dofhandler)	##TODO change name and dofhandler
+			vtk_point_data(vtk, dofhandler, c_n, "") ##TODO change dofhandler and c_n
+			vtk_save(vtk)
 		end 
 	end
 	
-	if calibration==true
+	if calibration
 		return error
 	else
 		return store, store_m

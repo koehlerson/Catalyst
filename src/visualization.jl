@@ -11,3 +11,8 @@ function plotAnimation(storage::Array, gifname::String)
 
     gif(anim, gifname, fps = 15)
 end
+
+function plotOverTime(storage::Array, ylim=(0,1), save=false, figname=missing)
+		n = length(storage[1])
+		plot(getindex.(storage, n), ylims=ylim)
+end

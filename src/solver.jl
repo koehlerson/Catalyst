@@ -77,7 +77,7 @@ function solve(Dᵢ::Float64, k::Float64, kᵧ::Float64,
 		end
 		
 		if calibration==true
-			error += (c[end] - inputExp(t))^2 
+			error += (c[end] - output_exp[t])^2 
 		end 
 	end
 	

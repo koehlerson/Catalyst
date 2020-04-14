@@ -77,6 +77,7 @@ function solve(Dᵢ::Float64, k::Float64, kᵧ::Float64,
 			ProgressMeter.next!(p)
 		end
 		
+<<<<<<< HEAD
 		if calibration
 			error += (c[end] - output_exp[t])^2 
 		end 
@@ -85,6 +86,10 @@ function solve(Dᵢ::Float64, k::Float64, kᵧ::Float64,
 			vtk = vtk_grid(name, dofhandler)	##TODO change name and dofhandler
 			vtk_point_data(vtk, dofhandler, c_n, "") ##TODO change dofhandler and c_n
 			vtk_save(vtk)
+=======
+		if calibration==true
+			error += (c[end] - output_exp[t])^2 
+>>>>>>> 1a689e11e004f82ad5eadbd783fba5337829be6f
 		end 
 	end
 	

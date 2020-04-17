@@ -5,7 +5,7 @@ function solve(Dᵢ::Float64, k::Float64, kᵧ::Float64,
 			   h= L/N[1], δT = h/(2 * abs(w)),
 			   progress=true, calibration=false,
 			   microSave=false, microSaveTime = (250, 300, 350, 400),
-			   microSaveLocation=((10,1), (40,1), (80,1)),
+			   microSaveLocation=((10,1), (50,1), (80,1)),
 			   microMesh=Parser.getGrid(projectdir("test/catalyst.msh"))) 
 		
 	left = zero(Vec{1})
@@ -57,6 +57,10 @@ function solve(Dᵢ::Float64, k::Float64, kᵧ::Float64,
 	if calibration==true
 		error = 0
 	end
+	
+	if microSave	
+		pvds = paraview_collection("ele_50")
+	end
 
 	for t = 1:Δt:T
 	    update!(ch, t) # load current dbc values from input_exp
@@ -91,14 +95,22 @@ function solve(Dᵢ::Float64, k::Float64, kᵧ::Float64,
 				vtk = vtk_grid(datadir("simulation/micro_Catalyst_$name"), catalyst.dh)
 				vtk_point_data(vtk, catalyst.dh, catalyst.c_n, "") 
 				vtk_save(vtk)
+				if microPoints[1] == 50
+					pvds[t] = vtk
+				end
 			end
 		end
 
 		if calibration==true
 			error += (c[end] - output_exp[t])^2 
-		end 
+		end
+
 	end
 	
+	if microSave
+		vtk_save(pvds)
+	end
+
 	if calibration
 		return error
 	else

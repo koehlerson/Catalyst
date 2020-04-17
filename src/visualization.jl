@@ -9,7 +9,7 @@ function plotAnimation(storage::Array, gifname::String)
         t += 1
     end
 
-    gif(anim, gifname, fps = 15)
+    gif(anim, gifname, fps = 24)
 end
 
 function plotOverTime(storage::Array, ylim=(0,1), save=false, figname=missing)

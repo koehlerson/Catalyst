@@ -10,3 +10,11 @@ Physical Surface("Boundary") = {1};
 Physical Surface("Boundary") += {1};
 //+
 Physical Volume("Domain") += {1};
+//+
+Physical Surface("Boundary") += {1};
+//+
+Physical Volume("Domain") += {1};
+//+
+Physical Surface("Boundary") += {1};
+//+
+Physical Volume("Domain") += {1};

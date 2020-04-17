@@ -13,19 +13,18 @@ for row in CSV.File(datadir("experiment/new-data.csv"); delim = " ")
 end
 
 microMesh = Parser.getGrid(projectdir("test/catalyst.msh"))
-Init = [1e-5, 1, 1]
+Init = [1, 1]
 opts = cma.CMAOptions()
-opts["bounds"] = [[0, 0, 0], [1e12, 1e12, 1e12]]
-opts["popsize"] = 8
-es = cma.CMAEvolutionStrategy(Init, 1e1, opts)
+opts["bounds"] = [[0, 0], [1e12, 1e12]]
+es = cma.CMAEvolutionStrategy(Init, 1, opts)
 
 while isempty(es.stop())
 	solutions = es.ask()
 	fitness = zeros(length(solutions))
 	p = ProgressMeter.Progress(length(solutions), 0.5, "evaluating individiuals...")
 	for i in 1:length(solutions)
-		ind_fittness = Catalyst.solve(solutions[i][1]*1e-1, solutions[i][2], solutions[i][3],
-								 input_exp, output_exp, w=1.9128e-4, progress=false, calibration=true,
+		ind_fittness = Catalyst.solve(solutions[i][1]*1e-1, 1., 1.,
+								 input_exp, output_exp, progress=false, calibration=true,
 								 microMesh=microMesh)
 		fitness[i] = ind_fittness
 		ProgressMeter.next!(p)

@@ -50,16 +50,21 @@ function solve(Dᵢ::Float64, k::Float64, kᵧ::Float64,
 	store = []
 	store_m = []
 	
-	if progress==true
+	if progress
 		p = ProgressMeter.Progress(T, 0.5, "macro-scale progress...")
 	end
 	
-	if calibration==true
+	if calibration
 		error = 0
 	end
 	
-	if microSave	
-		pvds = paraview_collection("ele_50")
+	if microSave
+		name = @savename Dᵢ k kᵧ
+		pvds = []
+		for idx in 1:length(microSaveLocation)
+			eleno = microSaveLocation[idx][1]
+			push!(pvds, paraview_collection(datadir("simulation/ele-$eleno$name")))
+		end
 	end
 
 	for t = 1:Δt:T
@@ -87,28 +92,28 @@ function solve(Dᵢ::Float64, k::Float64, kᵧ::Float64,
 		end 
 	
 		if t in microSaveTime && microSave
-			for microPoints in microSaveLocation
-				catalyst = states[microPoints[1]][microPoints[2]]
-				name = (time=t, ele=microPoints[1], D_i=catalyst.D_i,
-						k=k, k_gamma=catalyst.k_γ)
+			for microPoints in collect(enumerate(microSaveLocation))
+				catalyst = states[microPoints[2][1]][microPoints[2][2]]
+				name = (ele=microPoints[2][1], D_i=Dᵢ,
+						k=k, k_gamma=kᵧ, t=t)
 				name = savename(name)
 				vtk = vtk_grid(datadir("simulation/micro_Catalyst_$name"), catalyst.dh)
 				vtk_point_data(vtk, catalyst.dh, catalyst.c_n, "") 
 				vtk_save(vtk)
-				if microPoints[1] == 50
-					pvds[t] = vtk
-				end
+				pvds[microPoints[1]][t] = vtk
 			end
 		end
 
-		if calibration==true
+		if calibration
 			error += (c[end] - output_exp[t])^2 
 		end
 
 	end
 	
 	if microSave
-		vtk_save(pvds)
+		for pvd in pvds
+			vtk_save(pvd) 
+		end
 	end
 
 	if calibration

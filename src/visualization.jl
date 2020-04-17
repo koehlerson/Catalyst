@@ -1,10 +1,10 @@
 
-function plotAnimation(storage::Array, gifname::String)
+function plotAnimation(storage::Array, gifname::String, lim=(0,1))
     t = 0
 	n = length(storage)
 	p = ProgressMeter.Progress(n, 0.5, "Creating a gif...")
 	anim = @animate for field in storage
-        plot(field, ylim = (0, 1), label = "time=$t")
+        plot(field, ylim = lim, label = "time=$t")
 		ProgressMeter.next!(p)
         t += 1
     end

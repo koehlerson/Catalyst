@@ -161,5 +161,6 @@ end
 include("assemble.jl")
 include("solver.jl")
 include("visualization.jl")
+include("utils.jl")
 
 end 

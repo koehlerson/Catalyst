@@ -13,11 +13,11 @@ for row in CSV.File(datadir("experiment/new-data.csv"); delim = " ")
 end
 
 microMesh = Parser.getGrid(projectdir("test/catalyst-once-refined.msh"))
-Init = [0.063, 3.212269]
+Init = [0.006536800306, 31.032160457]
 opts = cma.CMAOptions()
 opts["bounds"] = [[0, 0], [1e12, 1e12]]
 opts["popsize"] = 8
-es = cma.CMAEvolutionStrategy(Init, 1e-1, opts)
+es = cma.CMAEvolutionStrategy(Init, 1e-3, opts)
 
 while isempty(es.stop())
 	solutions = es.ask()

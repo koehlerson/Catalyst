@@ -2,6 +2,28 @@ using DrWatson
 @quickactivate :Catalyst
 import ProgressMeter
 
+function apply_rhs!(KK::Union{SparseMatrixCSC, JuAFEM.Symmetric}, f::AbstractVector,
+					ch::ConstraintHandler, applyzero::Bool=false)	
+	K = isa(KK, JuAFEM.Symmetric) ? KK.data : KK
+    @assert length(f) == 0 || length(f) == size(K, 1)
+    @boundscheck checkbounds(K, ch.prescribed_dofs, ch.prescribed_dofs)
+    @boundscheck length(f) == 0 || checkbounds(f, ch.prescribed_dofs)
+
+	m = JuAFEM.meandiag(K)
+    @inbounds for i in 1:length(ch.values)
+        d = ch.prescribed_dofs[i]
+        v = ch.values[i]
+        if !applyzero && v != 0
+            for j in nzrange(K, d)
+                f[K.rowval[j]] -= v * K.nzval[j]
+            end
+        end
+        if length(f) != 0
+            vz = applyzero ? zero(eltype(f)) : v
+            f[d] = vz * m
+        end
+	end
+end
 
 N = (100,)
 h = 0.05 / N[1]
@@ -59,6 +81,7 @@ M = doassemble(w, δT, cv, M, dh)
 coeff = states[50][2].coeff
 
 A = M + (Δt * K) + (Δt*k * M) - (Δt*k * (1 / (1 + coeff)) * coeff * M)
+copyA = copy(A)
 
 c_0 = zeros(ndofs(dh))
 c_n = copy(c_0)
@@ -66,6 +89,9 @@ c_n = copy(c_0)
 store = []
 m = doassemble(states, w, δT, cv, dh)
 store_m = []
+b = Δt * f + M * c_n + Δt*m # get the discrete rhs
+update!(ch, 1)
+apply!(A, ch)
 
 ProgressMeter.@showprogress for t = 1:Δt:T
     update!(ch, t) # load current dbc values from input_exp
@@ -74,9 +100,8 @@ ProgressMeter.@showprogress for t = 1:Δt:T
 	push!(store_m, m)
 	global b = Δt * f + M * c_n + Δt*m # get the discrete rhs
 
-    copyA = copy(A)
-    apply!(copyA, b, ch) # apply time-dependent dbc
-    global c = copyA \ b # solve the current time step
+    apply_rhs!(copyA, b, ch) # apply time-dependent dbc
+    global c = A \ b # solve the current time step
 
     catalystUpdate!(cv, dh, c, states, δT, w)
 
@@ -86,4 +111,4 @@ end
 
 
 
-plotAnimation(store, "done.gif")
+Catalyst.plotAnimation(store, "test_apply_rhs.gif")

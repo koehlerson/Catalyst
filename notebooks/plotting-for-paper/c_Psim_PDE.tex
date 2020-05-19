@@ -1,5 +1,5 @@
 \begin{tikzpicture}
-\begin{axis}[width={600}, height={400}, xlabel={time $t$ in $(s)$}, ylabel={concentration $c$ in (mol/m$^3)$}, xlabel style={font={\Large}}, ylabel style={font={\Large}}, legend style={font={\Large}}, yticklabel style={font={\Large}}, xticklabel style={font={\Large}}, ymax={1.05}, ymin={-0.05}, xmax={1010}, xmin={-10}, xtick={{0,100,200,300,400,500,600,700,800,900,1000}}, legend pos={south east}]
+\begin{axis}[width={600}, height={400}, xlabel={time $t$ in $(s)$}, ylabel={concentration $c$ in (mol/m$^3)$}, xlabel style={font={\Large}}, ylabel style={font={\Large}}, legend style={font={\Large}}, yticklabel style={font={\Large}}, xticklabel style={font={\Large}}, axis background/.style={fill={white!89.803921568!black}}, x grid style={white}, y grid style={white}, xmajorgrids, ymajorgrids, ymax={1.05}, ymin={-0.05}, xmax={1010}, xmin={-10}, xtick={{0,100,200,300,400,500,600,700,800,900,1000}}, legend pos={south east}]
     \addplot+[no markers, color={yellow!60!gray}, ultra thick]
         table[row sep={\\}]
         {

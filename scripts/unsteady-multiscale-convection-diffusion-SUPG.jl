@@ -7,7 +7,7 @@ struct RHSData{T}
     constrained_columns::SparseMatrixCSC{T, Int}
 end
 
-function get_rhs_data(ch::ConstraintHandler, A::Union{SparseMatrixCSC, JuAFEM.Symmetric})
+function get_rhs_data(ch::ConstraintHandler, A::SparseMatrixCSC)
     m = JuAFEM.meandiag(A)
     Aa = A[:, ch.prescribed_dofs]
     return RHSData(m, Aa)

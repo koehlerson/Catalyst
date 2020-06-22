@@ -2,14 +2,25 @@ using DrWatson
 @quickactivate :Catalyst
 import ProgressMeter
 
-function apply_rhs!(KK::Union{SparseMatrixCSC, JuAFEM.Symmetric}, f::AbstractVector,
+struct RHSData{T}
+    m::T
+    constrained_columns::SparseMatrixCSC{T, Int}
+end
+
+function get_rhs_data(ch::ConstraintHandler, A::SparseMatrixCSC)
+    m = JuAFEM.meandiag(A)
+    Aa = A[:, ch.prescribed_dofs]
+    return RHSData(m, Aa)
+end
+
+function apply_rhs!(data::RHSData, f::AbstractVector,
 					ch::ConstraintHandler, applyzero::Bool=false)	
-	K = isa(KK, JuAFEM.Symmetric) ? KK.data : KK
+	K = data.constrained_columns
     @assert length(f) == 0 || length(f) == size(K, 1)
     @boundscheck checkbounds(K, ch.prescribed_dofs, ch.prescribed_dofs)
     @boundscheck length(f) == 0 || checkbounds(f, ch.prescribed_dofs)
 
-	m = JuAFEM.meandiag(K)
+	m = data.m
     @inbounds for i in 1:length(ch.values)
         d = ch.prescribed_dofs[i]
         v = ch.values[i]
@@ -64,6 +75,7 @@ states =
     [[CatalystStateODE(D_i=Dᵢ, kᵧ=kᵧ, k=k, r=rᵢ) for _ = 1:nqp] for _ = 1:getncells(grid)]
 
 ch = ConstraintHandler(dh)
+
 function inputExp(t)
     t_int = convert(Int, t)
     return input_exp[t_int]
@@ -73,7 +85,6 @@ dbc = Dirichlet(:c, getfaceset(grid, "left"), (x, t) -> inputExp(t))
 add!(ch, dbc)
 close!(ch)
 
-
 δT = h / (2 * abs(w)) # stabilization parameter
 
 K, f = doassemble(Dₑ, w, δT, cv, K, dh)
@@ -81,7 +92,8 @@ M = doassemble(w, δT, cv, M, dh)
 coeff = states[50][2].coeff
 
 A = M + (Δt * K) + (Δt*k * M) - (Δt*k * (1 / (1 + coeff)) * coeff * M)
-copyA = copy(A)
+data = get_rhs_data(ch,A)
+#copyA = copy(A)
 
 c_0 = zeros(ndofs(dh))
 c_n = copy(c_0)
@@ -100,7 +112,7 @@ ProgressMeter.@showprogress for t = 1:Δt:T
 	push!(store_m, m)
 	global b = Δt * f + M * c_n + Δt*m # get the discrete rhs
 
-    apply_rhs!(copyA, b, ch) # apply time-dependent dbc
+    apply_rhs!(data, b, ch) # apply time-dependent dbc
     global c = A \ b # solve the current time step
 
     catalystUpdate!(cv, dh, c, states, δT, w)

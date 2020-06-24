@@ -173,7 +173,7 @@ function microComputation_nonlinear!(cₑ::Float64, Catalyst::CatalystStatePDE)
 
 	while true; newton_itr += 1
         c .= cₙ .+ Δc # Current guess
-        assemble_global!(K, g, Catalyst.dh, Catalyst.cv, Catalyst.fv, c)
+        assemble_jacobi!(K, g, Catalyst.dh, Catalyst.cv, c)
         normg = norm(g[JuAFEM.free_dofs(dbcs)])
         apply_zero!(K, g, dbcs)
 
@@ -211,4 +211,11 @@ function microComputation_nonlinear!(cₑ::Float64, Catalyst::CatalystStatePDE)
 	
 	Catalyst.c_n = cᵢ
 	Catalyst.cᵧ = cᵧ 
+end
+
+function assemble_jacobi!(K::SparseMatrixCSC{Float64,Int64}, f::Array{Float64,1}, 
+						  dh::DofHandler, cv::CellScalarValues, c::Array{Float64,1})
+	
+
+
 end

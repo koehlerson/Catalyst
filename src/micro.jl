@@ -1,21 +1,21 @@
 @with_kw mutable struct CatalystStateODE <: CatalystState
-    # Store Catalyst properties
-    D_i::Float64
-    kᵧ::Float64
-    k::Float64
-    h::Int= 1
-    r::Float64
-    V::Float64 = ((4 / 3.0) * pi * r^3)
-    A::Float64 = 4 * pi * r^2
-    Δt::Int = 1
-    coeff::Float64 = (D_i * A * Δt) / (V * h * kᵧ)
-    # Store temporary values
-    cᵧ_old::Float64 = 0.0
+  # Store Catalyst properties
+  D_i::Float64
+  kᵧ::Float64
+  k::Float64
+  h::Int= 1
+  r::Float64
+  V::Float64 = ((4 / 3.0) * pi * r^3)
+  A::Float64 = 4 * pi * r^2
+  Δt::Int = 1
+  coeff::Float64 = (D_i * A * Δt) / (V * h * kᵧ)
+  # Store temporary values
+  cᵧ_old::Float64 = 0.0
 end
 
 @with_kw mutable struct CatalystStatePDE <: CatalystState
     # Store Catalyst properties
-    D_i::Float64
+  D_i::Float64
 	k_γ::Float64
 	mesh::Grid
 	c_n::Array{Float64,1}
@@ -59,27 +59,27 @@ function CatalystStatePDE(D_i::Float64, k_γ::Float64, mesh::Grid)
 end
 
 function catalystUpdate!(
-    cellvalues::CellScalarValues{dim},
-    dh::DofHandler,
-    c::AbstractVector,
+  cellvalues::CellScalarValues{dim},
+  dh::DofHandler,
+  c::AbstractVector,
 	Catalysts::Array{Array{CatalystStateODE,1},1},
-    δT::Float64,
-    w::Float64,
+  δT::Float64,
+  w::Float64,
 ) where {dim}
-n_basefuncs = getnbasefunctions(cellvalues)
-    @inbounds for cell in CellIterator(dh)
-        Catalyst = Catalysts[cell.current_cellid.x]
-        reinit!(cellvalues, cell)
-        dofs = celldofs(cell)
-        ce = [c[dof] for dof in dofs]
-        for q_point = 1:getnquadpoints(cellvalues)
-            cₑ = function_value(cellvalues, q_point, ce)
-            coeff = Catalyst[q_point].coeff
-            cᵧ_old = Catalyst[q_point].cᵧ_old
-            cᵧ_new = (1.0 / (1.0 + coeff)) * (cᵧ_old + coeff * cₑ)
-            Catalyst[q_point].cᵧ_old = cᵧ_new
-        end
+	n_basefuncs = getnbasefunctions(cellvalues)
+  @inbounds for cell in CellIterator(dh)
+  	Catalyst = Catalysts[cell.current_cellid.x]
+    reinit!(cellvalues, cell)
+    dofs = celldofs(cell)
+    ce = [c[dof] for dof in dofs]
+    for q_point = 1:getnquadpoints(cellvalues)
+      cₑ = function_value(cellvalues, q_point, ce)
+      coeff = Catalyst[q_point].coeff
+      cᵧ_old = Catalyst[q_point].cᵧ_old
+      cᵧ_new = (1.0 / (1.0 + coeff)) * (cᵧ_old + coeff * cₑ)
+      Catalyst[q_point].cᵧ_old = cᵧ_new
     end
+  end
 end
 
 function catalystUpdate!(
@@ -119,7 +119,7 @@ function microComputation_linear!(cₑ::Float64, Catalyst::CatalystStatePDE)
 	cᵢ = cg(copyA, b)
 
 	cᵧ = 0.0
-    n_basefuncs = getnbasefunctions(Catalyst.cv)
+  n_basefuncs = getnbasefunctions(Catalyst.cv)
 
 	@inbounds for (cellcount,cell) in enumerate(CellIterator(Catalyst.dh))
 		reinit!(Catalyst.cv, cell)
@@ -127,7 +127,7 @@ function microComputation_linear!(cₑ::Float64, Catalyst::CatalystStatePDE)
 		ce = [cᵢ[dof] for dof in dofs]
 		for face in 1:nfaces(cell)
 			if (cellcount, face) ∈ getfaceset(Catalyst.mesh,"1")
-                reinit!(Catalyst.fv, cell, face)
+      	reinit!(Catalyst.fv, cell, face)
 				for q_point = 1:getnquadpoints(Catalyst.fv)
 					∇cᵢ = function_gradient(Catalyst.fv, q_point, ce)
 					n = getnormal(Catalyst.fv, q_point)
@@ -155,50 +155,50 @@ function microComputation_nonlinear!(cₑ::Float64, Catalyst::CatalystStatePDE)
 	
 	b = Catalyst.k_γ*(Catalyst.M * Catalyst.c_n) #only valid for zero micro source term 
 	
-    # Pre-allocation of vectors for the solution and Newton increments
-    _ndofs = ndofs(Catalyst.dh)
-    c  = zeros(_ndofs)
-    Δc = zeros(_ndofs)
-    c¯ = zeros(_ndofs)
-    cₙ = Catalyst.c_n # previous solution vector
-    apply!(cₙ, dbcs)
+  # Pre-allocation of vectors for the solution and Newton increments
+  _ndofs = ndofs(Catalyst.dh)
+  c  = zeros(_ndofs)
+  Δc = zeros(_ndofs)
+  c¯ = zeros(_ndofs)
+  cₙ = Catalyst.c_n # previous solution vector
+  apply!(cₙ, dbc)
 
-    # Create sparse matrix and residual vector
-    K = create_sparsity_pattern(Catalyst.dh)
-    g = zeros(_ndofs)
+  # Create sparse matrix and residual vector
+  K = create_sparsity_pattern(Catalyst.dh)
+  g = zeros(_ndofs)
 
-    # Perform Newton iterations
-    newton_itr = -1
-    NEWTON_TOL = 1e-8
+  # Perform Newton iterations
+  newton_itr = -1
+  NEWTON_TOL = 1e-8
 
 	while true; newton_itr += 1
-        c .= cₙ .+ Δc # Current guess
-        assemble_jacobi!(K, g, Catalyst.dh, Catalyst.cv, c)
-        normg = norm(g[JuAFEM.free_dofs(dbcs)])
-        apply_zero!(K, g, dbcs)
+		c .= cₙ .+ Δc # Current guess
+    assemble_jacobi!(K, g, Catalyst.dh, Catalyst.cv, c)
+    normg = norm(g[JuAFEM.free_dofs(dbc)])
+    apply_zero!(K, g, dbc)
 
-        if normg < NEWTON_TOL
-            break
-        elseif newton_itr > 30
-            error("Reached maximum Newton iterations, aborting")
-        end
+    if normg < NEWTON_TOL
+        break
+    elseif newton_itr > 30
+        error("Reached maximum Newton iterations, aborting")
+    end
 
-        # Compute increment using cg! from IterativeSolvers.jl
-        cg!(c¯, K, g; maxiter=1000)
-        apply_zero!(c¯, dbcs)
-        Δc .-= c¯
+    # Compute increment using cg! from IterativeSolvers.jl
+    cg!(c¯, K, g; maxiter=1000)
+    apply_zero!(c¯, dbc)
+    Δc .-= c¯
 	end
 
 	cᵧ = 0.0
-    n_basefuncs = getnbasefunctions(Catalyst.cv)
+  n_basefuncs = getnbasefunctions(Catalyst.cv)
 
 	@inbounds for (cellcount,cell) in enumerate(CellIterator(Catalyst.dh))
 		reinit!(Catalyst.cv, cell)
 		dofs = celldofs(cell)
-		ce = [cᵢ[dof] for dof in dofs]
+		ce = [c[dof] for dof in dofs]
 		for face in 1:nfaces(cell)
 			if (cellcount, face) ∈ getfaceset(Catalyst.mesh,"1")
-                reinit!(Catalyst.fv, cell, face)
+        reinit!(Catalyst.fv, cell, face)
 				for q_point = 1:getnquadpoints(Catalyst.fv)
 					∇cᵢ = function_gradient(Catalyst.fv, q_point, ce)
 					n = getnormal(Catalyst.fv, q_point)
@@ -209,7 +209,7 @@ function microComputation_nonlinear!(cₑ::Float64, Catalyst::CatalystStatePDE)
 		end
 	end
 	
-	Catalyst.c_n = cᵢ
+	Catalyst.c_n = c
 	Catalyst.cᵧ = cᵧ 
 end
 

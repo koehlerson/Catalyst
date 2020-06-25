@@ -14,7 +14,7 @@
 end
 
 @with_kw mutable struct CatalystStatePDE <: CatalystState
-    # Store Catalyst properties
+  # Store Catalyst properties
   D_i::Float64
 	k_γ::Float64
 	mesh::Grid
@@ -213,9 +213,60 @@ function microComputation_nonlinear!(cₑ::Float64, Catalyst::CatalystStatePDE)
 	Catalyst.cᵧ = cᵧ 
 end
 
-function assemble_jacobi!(K::SparseMatrixCSC{Float64,Int64}, f::Array{Float64,1}, 
-						  dh::DofHandler, cv::CellScalarValues, c::Array{Float64,1})
-	
+function assemble_nonlinear_micro_global!(K::SparseMatrixCSC{Float64,Int64}, 
+																					f::Array{Float64,1}, dh::DofHandler, 
+																					cv::CellScalarValues, c::Array{Float64,1})
+"""
+Assembles only the nonlinear part of the jacobian, so needs to add the linear part
+after nonlinear assemble, i.e. 
+assemble K, add mass matrix M and Diffusion Matrix Catalyst.K on top (Catalyst.A)
+"""
+#TODO change function signature and pass Δt, D, Q, K, cⁿ
+	n = ndofs_per_cell(dh)
+	ke = zeros(n,n)
+	ge = zeros(n)
 
+	assembler = start_assemble(K,f)
 
+	for cell in CellIterator(dh)
+		global_dofs = celldofs(cell)
+		ce = c[global_dofs]
+		assemble_nonlinear_micro_element!(ke, ge, cell, cv, ce)
+		assemble!(assembler, global_dofs, ge, ke)
+	end
+	K += Catalyst.A
+
+end
+
+function assemble_nonlinear_micro_element!(ke, ge, cell, cv, ce, Δt, D, Q, K, cⁿ)
+	reinit!(cv, cell)
+	fill!(ke, 0.0)
+	fill!(ge, 0.0)
+	ndofs = getnbasefunctions(cv)
+
+	for qp in 1:getnquadpoints(cv)
+		dΩ = getdetJdV(cv, qp)
+		c¯ = function_value(cv, qp, ce)
+		∇c¯ = function_gradient(cv, qp, ce)
+		f′= langmuir_isotherm′(c¯, Q, K)
+		f″ = langmuir_isotherm″(c¯, Q, K)	
+		for i in 1:ndofs 
+			vᵢ = shape_value(cv, qp, i)
+			∇vᵢ = shape_gradient(cv, qp, i)
+			ge[i] += (c¯*vᵢ + Δt*∇vᵢ*D*∇c¯ + f′*(c¯ - cⁿ)*vᵢ - cⁿ*vᵢ)*dΩ
+			for j in 1:ndofs
+				vⱼ = shape_value(cv, qp, j)
+				∇vⱼ = shape_gradient(cv, qp, j)
+					ke[i, j] += (f′*vᵢ*vⱼ + f″*c¯*vᵢ*vⱼ - f″*cⁿ*vᵢ*vⱼ) *dΩ
+			end
+		end
+	end
+end 
+
+function langmuir_isotherm′(c¯, Q, K)
+	return Q*K*(1+K*c¯)^2
+end
+
+function langmuir_isotherm″(c¯, Q, K)
+	return -2*Q*K^2*(1+K*c¯)^-3
 end

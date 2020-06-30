@@ -37,8 +37,7 @@ function CatalystStatePDE(D_i::Float64, k_γ::Float64, mesh::Grid)
 		
 	ip = Lagrange{3, RefTetrahedron, 1}()
 	qr = QuadratureRule{3, RefTetrahedron}(2)
-	qr_face = QuadratureRule{2,RefTetrahedron}(2) #QuadratureRule
-	cv = CellScalarValues(qr, ip)
+	qr_face = QuadratureRule{2,RefTetrahedron}(2) #QuadratureRule cv = CellScalarValues(qr, ip)
 	fv = FaceScalarValues(qr_face, ip) #FEValues
 
 	dh = DofHandler(microMesh)
@@ -150,10 +149,6 @@ function microComputation_nonlinear!(cₑ::Float64, Catalyst::CatalystStatePDE)
 	add!(ch, dbc);	
 	close!(ch)
 	update!(ch, 0.0);
-
-	copyA = copy(Catalyst.A)
-	
-	b = Catalyst.k_γ*(Catalyst.M * Catalyst.c_n) #only valid for zero micro source term 
 	
   # Pre-allocation of vectors for the solution and Newton increments
   _ndofs = ndofs(Catalyst.dh)
@@ -173,7 +168,7 @@ function microComputation_nonlinear!(cₑ::Float64, Catalyst::CatalystStatePDE)
 
 	while true; newton_itr += 1
 		c .= cₙ .+ Δc # Current guess
-    assemble_jacobi!(K, g, Catalyst.dh, Catalyst.cv, c)
+    assemble_nonlinear_micro_global!(K, g, Catalyst.dh, Catalyst.cv, c)
     normg = norm(g[JuAFEM.free_dofs(dbc)])
     apply_zero!(K, g, dbc)
 
@@ -264,7 +259,7 @@ function assemble_nonlinear_micro_element!(ke, ge, cell, cv, ce, Δt, D, Q, K, c
 end 
 
 function langmuir_isotherm′(c¯, Q, K)
-	return Q*K*(1+K*c¯)^2
+	return Q*K*(1+K*c¯)^-2
 end
 
 function langmuir_isotherm″(c¯, Q, K)

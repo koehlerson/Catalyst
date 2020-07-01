@@ -17,6 +17,8 @@ end
   # Store Catalyst properties
   D_i::Float64
 	k_γ::Float64
+	kₙ::Float64
+	Q::Float64
 	mesh::Grid
 	c_n::Array{Float64,1}
 	cᵧ::Float64
@@ -37,7 +39,8 @@ function CatalystStatePDE(D_i::Float64, k_γ::Float64, mesh::Grid)
 		
 	ip = Lagrange{3, RefTetrahedron, 1}()
 	qr = QuadratureRule{3, RefTetrahedron}(2)
-	qr_face = QuadratureRule{2,RefTetrahedron}(2) #QuadratureRule cv = CellScalarValues(qr, ip)
+	qr_face = QuadratureRule{2,RefTetrahedron}(2) #QuadratureRule 
+	cv = CellScalarValues(qr, ip)
 	fv = FaceScalarValues(qr_face, ip) #FEValues
 
 	dh = DofHandler(microMesh)
@@ -140,7 +143,6 @@ function microComputation_linear!(cₑ::Float64, Catalyst::CatalystStatePDE)
 	Catalyst.c_n = cᵢ
 	Catalyst.cᵧ = cᵧ 
 end
-
 function microComputation_nonlinear!(cₑ::Float64, Catalyst::CatalystStatePDE)
 	ch = ConstraintHandler(Catalyst.dh);
 	
@@ -168,7 +170,9 @@ function microComputation_nonlinear!(cₑ::Float64, Catalyst::CatalystStatePDE)
 
 	while true; newton_itr += 1
 		c .= cₙ .+ Δc # Current guess
-    assemble_nonlinear_micro_global!(K, g, Catalyst.dh, Catalyst.cv, c)
+    assemble_nonlinear_micro_global!(K, g, Catalyst.dh, Catalyst.cv, c, 
+																		 1.0, Catalyst.D_i, Catalyst.Q, Catalyst.kₙ,
+																		 Catalyst.c_n)
     normg = norm(g[JuAFEM.free_dofs(dbc)])
     apply_zero!(K, g, dbc)
 
@@ -210,7 +214,8 @@ end
 
 function assemble_nonlinear_micro_global!(K::SparseMatrixCSC{Float64,Int64}, 
 																					f::Array{Float64,1}, dh::DofHandler, 
-																					cv::CellScalarValues, c::Array{Float64,1})
+																					cv::CellScalarValues, c::Array{Float64,1},
+																					Δt, D, Q, K, cⁿ)
 """
 Assembles only the nonlinear part of the jacobian, so needs to add the linear part
 after nonlinear assemble, i.e. 
@@ -224,9 +229,10 @@ assemble K, add mass matrix M and Diffusion Matrix Catalyst.K on top (Catalyst.A
 	assembler = start_assemble(K,f)
 
 	for cell in CellIterator(dh)
+		De = D
 		global_dofs = celldofs(cell)
 		ce = c[global_dofs]
-		assemble_nonlinear_micro_element!(ke, ge, cell, cv, ce)
+		assemble_nonlinear_micro_element!(ke, ge, cell, cv, ce, Δt, De, Q, K, cⁿ)
 		assemble!(assembler, global_dofs, ge, ke)
 	end
 	K += Catalyst.A

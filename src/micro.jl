@@ -34,7 +34,8 @@ end
 	f::Array{Float64,1}
 end
 
-function CatalystStatePDE(D_i::Float64, k_γ::Float64, mesh::Grid)
+function CatalystStatePDE(D_i::Float64, k_γ::Float64, mesh::Grid, Q::Float64=0.,
+												 kₙ::Float64=0.)
 	microMesh = mesh
 		
 	ip = Lagrange{3, RefTetrahedron, 1}()
@@ -55,9 +56,10 @@ function CatalystStatePDE(D_i::Float64, k_γ::Float64, mesh::Grid)
 	K, f = doassemble(D_i, w, δT, cv, K, dh);
 	M = doassemble(w, δT, cv, M, dh);
 	A = K + k_γ*M
-	return CatalystStatePDE(D_i=D_i, k_γ=k_γ, mesh=microMesh, c_n=c_n, cᵧ=0.0, ip=ip, qr=qr, 
-							qr_face=qr_face, cv=cv, fv=fv, dh=dh, M=M, 
-							K=K, A=A, f=f)
+	return CatalystStatePDE(D_i=D_i, k_γ=k_γ, kₙ=kₙ, Q=Q,
+													mesh=microMesh, c_n=c_n, cᵧ=0.0, 
+													ip=ip, qr=qr, qr_face=qr_face, cv=cv, 
+													fv=fv, dh=dh, M=M, K=K, A=A, f=f)
 end
 
 function catalystUpdate!(
@@ -143,6 +145,7 @@ function microComputation_linear!(cₑ::Float64, Catalyst::CatalystStatePDE)
 	Catalyst.c_n = cᵢ
 	Catalyst.cᵧ = cᵧ 
 end
+
 function microComputation_nonlinear!(cₑ::Float64, Catalyst::CatalystStatePDE)
 	ch = ConstraintHandler(Catalyst.dh);
 	
@@ -156,36 +159,35 @@ function microComputation_nonlinear!(cₑ::Float64, Catalyst::CatalystStatePDE)
   _ndofs = ndofs(Catalyst.dh)
   c  = zeros(_ndofs)
   Δc = zeros(_ndofs)
-  c¯ = zeros(_ndofs)
   cₙ = Catalyst.c_n # previous solution vector
-  apply!(cₙ, dbc)
+  apply!(c, ch)
 
   # Create sparse matrix and residual vector
-  K = create_sparsity_pattern(Catalyst.dh)
-  g = zeros(_ndofs)
+  𝐉 = create_sparsity_pattern(Catalyst.dh)
+  r = zeros(_ndofs)
 
   # Perform Newton iterations
   newton_itr = -1
   NEWTON_TOL = 1e-8
-
 	while true; newton_itr += 1
-		c .= cₙ .+ Δc # Current guess
-    assemble_nonlinear_micro_global!(K, g, Catalyst.dh, Catalyst.cv, c, 
-																		 1.0, Catalyst.D_i, Catalyst.Q, Catalyst.kₙ,
-																		 Catalyst.c_n)
-    normg = norm(g[JuAFEM.free_dofs(dbc)])
-    apply_zero!(K, g, dbc)
 
-    if normg < NEWTON_TOL
-        break
-    elseif newton_itr > 30
-        error("Reached maximum Newton iterations, aborting")
-    end
+		if newton_itr > 20
+		    error("Reached maximum Newton iterations, aborting")
+		    break
+		end
+    assemble_nonlinear_micro_global!(𝐉, r, Catalyst.dh, Catalyst.cv, c, 
+																		 1.0, Catalyst.D_i, Catalyst.Q, Catalyst.kₙ,
+																		 cₙ, Catalyst.A)
+    normr = norm(r[JuAFEM.free_dofs(ch)])
+		println("Iteration: $newton_itr \tresidual: $normr")
+		if normr < NEWTON_TOL
+		    break
+		end
+    apply_zero!(𝐉, r, ch)
 
     # Compute increment using cg! from IterativeSolvers.jl
-    cg!(c¯, K, g; maxiter=1000)
-    apply_zero!(c¯, dbc)
-    Δc .-= c¯
+    cg!(Δc, 𝐉, r; maxiter=1000)
+    c .-= Δc
 	end
 
 	cᵧ = 0.0
@@ -215,13 +217,13 @@ end
 function assemble_nonlinear_micro_global!(K::SparseMatrixCSC{Float64,Int64}, 
 																					f::Array{Float64,1}, dh::DofHandler, 
 																					cv::CellScalarValues, c::Array{Float64,1},
-																					Δt, D, Q, K, cⁿ)
+																					Δt, D, Q, kₙ, cⁿ, 
+																					𝐀::SparseMatrixCSC{Float64,Int64})
 """
 Assembles only the nonlinear part of the jacobian, so needs to add the linear part
 after nonlinear assemble, i.e. 
-assemble K, add mass matrix M and Diffusion Matrix Catalyst.K on top (Catalyst.A)
+assemble K, add mass matrix M and Diffusion Matrix Catalyst.K on top 𝐀
 """
-#TODO change function signature and pass Δt, D, Q, K, cⁿ
 	n = ndofs_per_cell(dh)
 	ke = zeros(n,n)
 	ge = zeros(n)
@@ -232,14 +234,15 @@ assemble K, add mass matrix M and Diffusion Matrix Catalyst.K on top (Catalyst.A
 		De = D
 		global_dofs = celldofs(cell)
 		ce = c[global_dofs]
-		assemble_nonlinear_micro_element!(ke, ge, cell, cv, ce, Δt, De, Q, K, cⁿ)
+		cⁿₑ = cⁿ[global_dofs]
+		assemble_nonlinear_micro_element!(ke, ge, cell, cv, ce, Δt, De, Q, kₙ, cⁿₑ)
 		assemble!(assembler, global_dofs, ge, ke)
 	end
-	K += Catalyst.A
+	K .+= 𝐀
 
 end
 
-function assemble_nonlinear_micro_element!(ke, ge, cell, cv, ce, Δt, D, Q, K, cⁿ)
+function assemble_nonlinear_micro_element!(ke, ge, cell, cv, ce, Δt, D, Q, kₙ, cⁿₑ)
 	reinit!(cv, cell)
 	fill!(ke, 0.0)
 	fill!(ge, 0.0)
@@ -248,13 +251,14 @@ function assemble_nonlinear_micro_element!(ke, ge, cell, cv, ce, Δt, D, Q, K, c
 	for qp in 1:getnquadpoints(cv)
 		dΩ = getdetJdV(cv, qp)
 		c¯ = function_value(cv, qp, ce)
+		cⁿ = function_value(cv, qp, cⁿₑ)
 		∇c¯ = function_gradient(cv, qp, ce)
-		f′= langmuir_isotherm′(c¯, Q, K)
-		f″ = langmuir_isotherm″(c¯, Q, K)	
+		f′= langmuir_isotherm′(c¯, Q, kₙ)
+		f″ = langmuir_isotherm″(c¯, Q, kₙ)	
 		for i in 1:ndofs 
 			vᵢ = shape_value(cv, qp, i)
 			∇vᵢ = shape_gradient(cv, qp, i)
-			ge[i] += (c¯*vᵢ + Δt*∇vᵢ*D*∇c¯ + f′*(c¯ - cⁿ)*vᵢ - cⁿ*vᵢ)*dΩ
+			ge[i] += (c¯*vᵢ + Δt*D*(∇vᵢ⋅∇c¯) + f′*(c¯ - cⁿ)*vᵢ - cⁿ*vᵢ)*dΩ
 			for j in 1:ndofs
 				vⱼ = shape_value(cv, qp, j)
 				∇vⱼ = shape_gradient(cv, qp, j)
@@ -264,10 +268,10 @@ function assemble_nonlinear_micro_element!(ke, ge, cell, cv, ce, Δt, D, Q, K, c
 	end
 end 
 
-function langmuir_isotherm′(c¯, Q, K)
-	return Q*K*(1+K*c¯)^-2
+function langmuir_isotherm′(c¯, Q, kₙ)
+	return Q*kₙ*(1+kₙ*c¯)^-2
 end
 
-function langmuir_isotherm″(c¯, Q, K)
-	return -2*Q*K^2*(1+K*c¯)^-3
+function langmuir_isotherm″(c¯, Q, kₙ)
+	return -2*Q*kₙ^2*(1+kₙ*c¯)^-3
 end

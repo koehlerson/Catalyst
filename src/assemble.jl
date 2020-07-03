@@ -1,3 +1,13 @@
+@doc raw"""
+		doassemble(w, δT, cellvalues, M, dh)
+
+Returns the mass matrix 
+```math
+\int_{\Omega} c\cdot v d\Omega
+```
+where v is either the test function of a Galerkin or Petrov-Galerkin discretization.
+Can be controlled by setting the stabilization parameter δT equal to 0
+"""
 function doassemble(
     w,
     δT,
@@ -18,7 +28,7 @@ function doassemble(
                 ∇v = shape_gradient(cellvalues, q_point, i)
                 for j = 1:n_basefuncs
                     c = shape_value(cellvalues, q_point, j)
-					Me[i, j] += c * v * dΩ  + c * (w ⋅ ∇v) * δT * dΩ
+										Me[i, j] += c * v * dΩ  + c * (w ⋅ ∇v) * δT * dΩ
                 end
             end
         end
@@ -27,6 +37,20 @@ function doassemble(
     return M
 end
 
+@doc raw"""
+		doassemble(D, w, δT, cellvalues, K, dh, R)
+
+Returns the diffusion matrix `K` and a analytic given `R` reaction operator 
+```math
+K := \int_{\Omega} (D\cdot \nabla c)\cdot \nabla v d\Omega
+```
+
+```math
+R := \int_{\Omega} R v d\Omega
+```
+
+SUPG Stabilization included.
+"""
 function doassemble(
     D::Float64,
     w,
@@ -56,8 +80,8 @@ function doassemble(
                     ∇c = shape_gradient(cellvalues, q_point, j)
                     Ke[i, j] +=
                         D * (∇v ⋅ ∇c) * dΩ +
-						(w ⋅ ∇c) * v * dΩ +
-						(w ⋅ ∇c) * (δT * (w ⋅ ∇v)) * dΩ
+												(w ⋅ ∇c) * v * dΩ +
+												(w ⋅ ∇c) * (δT * (w ⋅ ∇v)) * dΩ
                 end
             end
         end
@@ -66,6 +90,14 @@ function doassemble(
     return K, f
 end
 
+@doc raw"""
+		doassemble(Catalysts::Array{Array{CatalystStateODE,1},1}, w, δT, cellvalues, dh)
+
+Returns the assembled, linearized reaction Operator where in each material point an ODE is solved
+```math
+R := \int_{\Omega} k*(\overline{c} - c) v d\Omega
+```
+"""
 function doassemble(
 	Catalysts::Array{Array{CatalystStateODE,1},1},
     w::Float64,
@@ -101,6 +133,14 @@ function doassemble(
     return m
 end
 
+@doc raw"""
+		doassemble(Catalysts::Array{Array{CatalystStatePDE,1},1}, w, δT, cellvalues, dh)
+
+Returns the assembled, nonlinear reaction Operator where in each material point a linear or nonlinear PDE is solved
+```math
+R := \int_{\Omega} k*c_{\Gamma} v d\Omega
+```
+"""
 function doassemble(
 	Catalysts::Array{Array{CatalystStatePDE,1},1},
     w::Float64,
@@ -123,7 +163,7 @@ function doassemble(
             for i = 1:n_basefuncs
                 v = shape_value(cellvalues, q_point, i)
                 ∇v = shape_gradient(cellvalues, q_point, i)
-				me[i] += cᵧ * v * dΩ + cᵧ * δT * (w ⋅ ∇v) * dΩ
+								me[i] += cᵧ * v * dΩ + cᵧ * δT * (w ⋅ ∇v) * dΩ
             end
 
         end
@@ -131,6 +171,16 @@ function doassemble(
     end
     return m
 end
+
+
+@doc raw"""
+		doassemble(Catalysts::Array{Array{CatalystStateODE,1},1}, w, δT, cellvalues, dh)
+
+Computes the volume of a finite element discretized domain.
+```math
+V = \int_{\Omega} 1 d\Omega
+```
+"""
 function volume(dh::DofHandler, cv::CellScalarValues)
 	dΩ = 0
 	@inbounds for cell in CellIterator(dh)

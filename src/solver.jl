@@ -1,3 +1,32 @@
+"""
+		solve(Dᵢ::Float64, k::Float64, kᵧ::Float64, 
+					   input_exp::Array, output_exp::Array;
+					   N=(100,), L=5e-2, w=1.9128e-4 * (1 / 0.37), 
+					   T = 1000, Δt=1, Dₑ=1e-9, rᵢ=2.15e-7, 
+					   h= L/N[1], δT = h/(2 * abs(w)),
+					   progress=true, calibration=false,
+					   microSave=false, microSaveTime = (250, 300, 350, 400),
+					   microSaveLocation=((10,1), (50,1), (80,1)),
+						 microCompType=:linear,
+						 Q=0., kₙ=0.,
+					   microMesh=Parser.getGrid(projectdir("test/catalyst.msh"))) 
+
+is the main function of the package which starts a FE computation with nested 
+FE computations in material points.
+
+Dᵢ is the microscopic diffusion. k, kᵧ, Q, kₙ are microscopic parameters.
+input_exp, output_exp are the experiment measurements.
+progress enables/disables a progress bar for the macroscopic time steps.
+calibration enables/disables a returned error between the last node concentration and
+the output experiment concentration.
+microSave, microSaveTime and microSaveLocation controls which times and locations of
+the microscopic problems are saved to the disk
+microCompType decides whether or not linear or nonlinear micro computations are done.
+microMesh describes the microscopic domain.
+
+Returns either two arrays, one dimensional concentration field `c` at each time step
+and the assembled reaction operator at each time step or returns the squarred error (scalar).
+"""
 function solve(Dᵢ::Float64, k::Float64, kᵧ::Float64, 
 			   input_exp::Array, output_exp::Array;
 			   N=(100,), L=5e-2, w=1.9128e-4 * (1 / 0.37), 
@@ -6,6 +35,8 @@ function solve(Dᵢ::Float64, k::Float64, kᵧ::Float64,
 			   progress=true, calibration=false,
 			   microSave=false, microSaveTime = (250, 300, 350, 400),
 			   microSaveLocation=((10,1), (50,1), (80,1)),
+				 microCompType=:linear,
+				 Q=0., kₙ=0.,
 			   microMesh=Parser.getGrid(projectdir("test/catalyst.msh"))) 
 		
 	left = zero(Vec{1})
@@ -24,7 +55,7 @@ function solve(Dᵢ::Float64, k::Float64, kᵧ::Float64,
 	
 	nqp = getnquadpoints(cv)
 	states =
-	    [[CatalystStatePDE(Dᵢ, kᵧ, microMesh) for _ = 1:nqp] for _ = 1:getncells(grid)]
+	    [[CatalystStatePDE(Dᵢ, kᵧ, microMesh, Q, kₙ) for _ = 1:nqp] for _ = 1:getncells(grid)]
 	
 	ch = ConstraintHandler(dh)
 
@@ -68,20 +99,20 @@ function solve(Dᵢ::Float64, k::Float64, kᵧ::Float64,
 	end
 
 	for t = 1:Δt:T
-	    update!(ch, t) # load current dbc values from input_exp
+	  update!(ch, t) # load current dbc values from input_exp
 	
-	    m = doassemble(states, w, δT, cv, dh)
+	  m = doassemble(states, w, δT, cv, dh)
 		b =  M * c_n - k*Δt*m # get the discrete rhs
 	
-	    copyA = copy(A)
-	    apply!(copyA, b, ch) # apply time-dependent dbc
+	  copyA = copy(A)
+	  apply!(copyA, b, ch) # apply time-dependent dbc
 		c = gmres(copyA, b) # solve the current time step
 	
-	    catalystUpdate!(cv, dh, c, states, t)
+	  catalystUpdate!(cv, dh, c, states, t, microCompType)
 	
-	    push!(store, c) # store current solution
+	  push!(store, c) # store current solution
 		push!(store_m, m) # store current solution
-	    c_n = copy(c) # update time step
+	  c_n = copy(c) # update time step
 
 		if progress
 			ProgressMeter.next!(p)

@@ -91,7 +91,8 @@ function catalystUpdate!(
 	dh::DofHandler,
 	c::AbstractVector,
 	Catalysts::Array{Array{CatalystStatePDE,1},1},
-	t::Number
+	t::Number,
+	computation_type::Symbol
 ) where {dim}
 	n = length(CellIterator(dh))
 	@inbounds for cell in CellIterator(dh)
@@ -101,7 +102,8 @@ function catalystUpdate!(
 		ce = [c[dof] for dof in dofs] #element concentration vector
 		for q_point = 1:getnquadpoints(cellvalues)
 			cₑ = function_value(cellvalues, q_point, ce)
-			microComputation_linear!(cₑ, Catalyst[q_point])
+			#microComputation_linear!(cₑ, Catalyst[q_point])
+			eval(Symbol("microComputation_",computation_type, !))(cₑ, Catalyst[q_point])
 		end
 	end
 end

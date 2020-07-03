@@ -12,7 +12,7 @@
     # Store temporary values
     cᵧ_old::Float64 = 0.0
 end
-// any hfhf
+
 @with_kw mutable struct CatalystStatePDE <: CatalystState
     # Store Catalyst properties
     D_i::Float64

@@ -159,7 +159,7 @@ function microComputation_nonlinear!(cₑ::Float64, Catalyst::CatalystStatePDE)
 
     # Pre-allocation of vectors for the solution and Newton increments
     _ndofs = ndofs(Catalyst.dh)
-    c  = zeros(_ndofs)
+    c  = copy(Catalyst.c_n)
     Δc = zeros(_ndofs)
     cₙ = Catalyst.c_n # previous solution vector
     apply!(c, ch)

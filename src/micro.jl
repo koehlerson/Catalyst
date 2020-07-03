@@ -12,7 +12,7 @@
     # Store temporary values
     cᵧ_old::Float64 = 0.0
 end
-
+// any hfhf
 @with_kw mutable struct CatalystStatePDE <: CatalystState
     # Store Catalyst properties
     D_i::Float64
@@ -23,14 +23,14 @@ end
     c_n::Array{Float64,1}
     cᵧ::Float64
     ip::Lagrange{3,RefTetrahedron,1}
-    qr::QuadratureRule{3,RefTetrahedron,Float64} 
+    qr::QuadratureRule{3,RefTetrahedron,Float64}
     qr_face::QuadratureRule{2,RefTetrahedron,Float64}
-    cv::CellScalarValues 
+    cv::CellScalarValues
     fv::FaceScalarValues
-    dh::DofHandler 
+    dh::DofHandler
     M::SparseMatrixCSC{Float64,Int64}
-    K::SparseMatrixCSC{Float64,Int64}	
-    A::SparseMatrixCSC{Float64,Int64}	
+    K::SparseMatrixCSC{Float64,Int64}
+    A::SparseMatrixCSC{Float64,Int64}
     f::Array{Float64,1}
 end
 
@@ -40,7 +40,7 @@ function CatalystStatePDE(D_i::Float64, k_γ::Float64, mesh::Grid, Q::Float64=0.
 
     ip = Lagrange{3, RefTetrahedron, 1}()
     qr = QuadratureRule{3, RefTetrahedron}(2)
-    qr_face = QuadratureRule{2,RefTetrahedron}(2) #QuadratureRule 
+    qr_face = QuadratureRule{2,RefTetrahedron}(2) #QuadratureRule
     cv = CellScalarValues(qr, ip)
     fv = FaceScalarValues(qr_face, ip) #FEValues
 
@@ -57,8 +57,8 @@ function CatalystStatePDE(D_i::Float64, k_γ::Float64, mesh::Grid, Q::Float64=0.
     M = doassemble(w, δT, cv, M, dh);
     A = K + k_γ*M
     return CatalystStatePDE(D_i=D_i, k_γ=k_γ, kₙ=kₙ, Q=Q,
-                            mesh=microMesh, c_n=c_n, cᵧ=0.0, 
-                            ip=ip, qr=qr, qr_face=qr_face, cv=cv, 
+                            mesh=microMesh, c_n=c_n, cᵧ=0.0,
+                            ip=ip, qr=qr, qr_face=qr_face, cv=cv,
                             fv=fv, dh=dh, M=M, K=K, A=A, f=f)
 end
 
@@ -113,13 +113,13 @@ function microComputation_linear!(cₑ::Float64, Catalyst::CatalystStatePDE)
 
     ∂Ω = getfaceset(Catalyst.mesh, "1");
     dbc = Dirichlet(:c, ∂Ω, (x, t) -> cₑ)
-    add!(ch, dbc);	
+    add!(ch, dbc);
     close!(ch)
     update!(ch, 0.0);
 
     copyA = copy(Catalyst.A)
 
-    b = Catalyst.k_γ*(Catalyst.M * Catalyst.c_n) #only valid for zero micro source term 
+    b = Catalyst.k_γ*(Catalyst.M * Catalyst.c_n) #only valid for zero micro source term
 
     apply!(copyA, b, ch)
     cᵢ = cg(copyA, b)
@@ -145,7 +145,7 @@ function microComputation_linear!(cₑ::Float64, Catalyst::CatalystStatePDE)
     end
 
     Catalyst.c_n = cᵢ
-    Catalyst.cᵧ = cᵧ 
+    Catalyst.cᵧ = cᵧ
 end
 
 function microComputation_nonlinear!(cₑ::Float64, Catalyst::CatalystStatePDE)
@@ -153,7 +153,7 @@ function microComputation_nonlinear!(cₑ::Float64, Catalyst::CatalystStatePDE)
 
     ∂Ω = getfaceset(Catalyst.mesh, "1");
     dbc = Dirichlet(:c, ∂Ω, (x, t) -> cₑ)
-    add!(ch, dbc);	
+    add!(ch, dbc);
     close!(ch)
     update!(ch, 0.0);
 
@@ -177,7 +177,7 @@ function microComputation_nonlinear!(cₑ::Float64, Catalyst::CatalystStatePDE)
             error("Reached maximum Newton iterations, aborting")
             break
         end
-        assemble_nonlinear_micro_global!(𝐉, r, Catalyst.dh, Catalyst.cv, c, 
+        assemble_nonlinear_micro_global!(𝐉, r, Catalyst.dh, Catalyst.cv, c,
                                          1.0, Catalyst.D_i, Catalyst.Q, Catalyst.kₙ,
                                          cₙ, Catalyst.A)
         normr = norm(r[JuAFEM.free_dofs(ch)])
@@ -213,17 +213,17 @@ function microComputation_nonlinear!(cₑ::Float64, Catalyst::CatalystStatePDE)
     end
 
     Catalyst.c_n = c
-    Catalyst.cᵧ = cᵧ 
+    Catalyst.cᵧ = cᵧ
 end
 
-function assemble_nonlinear_micro_global!(K::SparseMatrixCSC{Float64,Int64}, 
-                                          f::Array{Float64,1}, dh::DofHandler, 
+function assemble_nonlinear_micro_global!(K::SparseMatrixCSC{Float64,Int64},
+                                          f::Array{Float64,1}, dh::DofHandler,
                                           cv::CellScalarValues, c::Array{Float64,1},
-                                          Δt, D, Q, kₙ, cⁿ, 
+                                          Δt, D, Q, kₙ, cⁿ,
                                           𝐀::SparseMatrixCSC{Float64,Int64})
     """
     Assembles only the nonlinear part of the jacobian, so needs to add the linear part
-    after nonlinear assemble, i.e. 
+    after nonlinear assemble, i.e.
     assemble K, add mass matrix M and Diffusion Matrix Catalyst.K on top 𝐀
     """
     n = ndofs_per_cell(dh)
@@ -256,8 +256,8 @@ function assemble_nonlinear_micro_element!(ke, ge, cell, cv, ce, Δt, D, Q, kₙ
         cⁿ = function_value(cv, qp, cⁿₑ)
         ∇c¯ = function_gradient(cv, qp, ce)
         f′= langmuir_isotherm′(c¯, Q, kₙ)
-        f″ = langmuir_isotherm″(c¯, Q, kₙ)	
-        for i in 1:ndofs 
+        f″ = langmuir_isotherm″(c¯, Q, kₙ)
+        for i in 1:ndofs
             vᵢ = shape_value(cv, qp, i)
             ∇vᵢ = shape_gradient(cv, qp, i)
             ge[i] += (c¯*vᵢ + Δt*D*(∇vᵢ⋅∇c¯) + f′*(c¯ - cⁿ)*vᵢ - cⁿ*vᵢ)*dΩ
@@ -268,7 +268,7 @@ function assemble_nonlinear_micro_element!(ke, ge, cell, cv, ce, Δt, D, Q, kₙ
             end
         end
     end
-end 
+end
 
 function langmuir_isotherm′(c¯, Q, kₙ)
     return Q*kₙ*(1+kₙ*c¯)^-2

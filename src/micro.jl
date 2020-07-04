@@ -216,16 +216,18 @@ function microComputation_nonlinear!(cₑ::Float64, Catalyst::CatalystStatePDE)
     Catalyst.cᵧ = cᵧ 
 end
 
+"""
+    function assemble_nonlinear_micro_global!(K::SparseMatrixCSC{Float64,Int64}, f::Array{Float64,1}, dh::DofHandler, cv::CellScalarValues, c::Array{Float64,1}, Δt, D, Q, kₙ, cⁿ, 𝐀::SparseMatrixCSC{Float64,Int64})
+
+Assembles only the nonlinear part of the jacobian, so needs to add the linear part
+after nonlinear assemble, i.e. 
+assemble K, add mass matrix M and Diffusion Matrix Catalyst.K on top 𝐀
+"""
 function assemble_nonlinear_micro_global!(K::SparseMatrixCSC{Float64,Int64}, 
                                           f::Array{Float64,1}, dh::DofHandler, 
                                           cv::CellScalarValues, c::Array{Float64,1},
                                           Δt, D, Q, kₙ, cⁿ, 
                                           𝐀::SparseMatrixCSC{Float64,Int64})
-    """
-    Assembles only the nonlinear part of the jacobian, so needs to add the linear part
-    after nonlinear assemble, i.e. 
-    assemble K, add mass matrix M and Diffusion Matrix Catalyst.K on top 𝐀
-    """
     n = ndofs_per_cell(dh)
     ke = zeros(n,n)
     ge = zeros(n)
@@ -270,10 +272,22 @@ function assemble_nonlinear_micro_element!(ke, ge, cell, cv, ce, Δt, D, Q, kₙ
     end
 end 
 
+"""
+    langmuir_isotherm′(c¯, Q, kₙ)
+
+computes the first derivative w.r.t. c¯ of the langmuir isotherm formulation, where 
+c¯ is the current Newton guess, Q is accordingly to wiki the value that forms the asymptote,
+kₙ is the Langmuir-Sorptioncoefficient. Returns a scalar.
+"""
 function langmuir_isotherm′(c¯, Q, kₙ)
     return Q*kₙ*(1+kₙ*c¯)^-2
 end
 
+"""
+    langmuir_isotherm″(c¯, Q, kₙ)
+
+computes the second derivative w.r.t. c¯ of the langmuir isotherm formulation.
+"""
 function langmuir_isotherm″(c¯, Q, kₙ)
     return -2*Q*kₙ^2*(1+kₙ*c¯)^-3
 end

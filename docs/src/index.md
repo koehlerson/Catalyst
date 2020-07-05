@@ -9,7 +9,7 @@ For the optimization the python package [cma from Nikolaus Hansen](https://githu
 
 The experiment data that we try to described looks for instance like this:
 
-![Experiment Data](../assets/experiment-data.svg)
+![Experiment Data](assets/experiment-data.svg)
 
 where *Experiment Input* serves as the dynamic Dirichlet boundary condition for the model.
 Here *Experiment Output* can optionally be used as a target function for the model and thus, is used for calibration as the reference curve.

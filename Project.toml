@@ -1,6 +1,5 @@
 name = "Catalyst"
 authors = ["Maximilian Köhler"]
-version = "0.1.0"
 uuid = "01e5440a-74e3-4b45-b8b9-c13ddfc5051b"
 
 [deps]

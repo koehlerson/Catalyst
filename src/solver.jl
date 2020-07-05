@@ -1,4 +1,4 @@
-"""
+@doc raw"""
     solve(Dᵢ::Float64, k::Float64, kᵧ::Float64, 
         input_exp::Array, output_exp::Array;
         N=(100,), L=5e-2, w=1.9128e-4 * (1 / 0.37), 
@@ -13,16 +13,17 @@
 
 is the main function of the package which starts a FE computation with nested 
 FE computations in material points.
+Sets up the finite element spaces, discretizes the operators, applies boundary conditions and solves the time dependent problem in a loop.
 
-Dᵢ is the microscopic diffusion. k, kᵧ, Q, kₙ are microscopic parameters.
-input_exp, output_exp are the experiment measurements.
-progress enables/disables a progress bar for the macroscopic time steps.
-calibration enables/disables a returned error between the last node concentration and
+- `Dᵢ` is the microscopic diffusion. `k, kᵧ, Q, kₙ` are microscopic parameters.
+- `input_exp, output_exp` are the experiment measurements.
+- `progress` enables/disables a progress bar for the macroscopic time steps.
+- `calibration` enables/disables a returned error between the last node concentration and
 the output experiment concentration.
-microsave, microsave_time and microsave_location controls which times and locations of
+- `microsave, microsave_time` and `microsave_location` controls which times and locations of
 the microscopic problems are saved to the disk
-microcomp_type decides whether or not linear or nonlinear micro computations are done.
-micromesh describes the microscopic domain.
+- `microcomp_type` decides whether or not linear or nonlinear micro computations are done.
+- `micromesh` describes the microscopic domain.
 
 Returns either two arrays, one dimensional concentration field `c` at each time step
 and the assembled reaction operator at each time step or returns the squarred error (scalar).

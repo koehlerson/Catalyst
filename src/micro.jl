@@ -1,3 +1,8 @@
+"""
+    CatalystStateODE(D_i, kᵧ, k, h, r, V, A, Δt, coeff, cᵧ_old)
+
+instantiates a `CatalystStateODE` struct holding all necessary values for the simplified microscale formulation
+"""
 @with_kw mutable struct CatalystStateODE <: CatalystState
     # Store Catalyst properties
     D_i::Float64
@@ -34,6 +39,11 @@ end
     f::Array{Float64,1}
 end
 
+"""
+    CatalystStatePDE(D_i, k_γ, mesh, Q, kₙ)
+
+constructs a `CatalystStatePDE` struct that stores all information about the microstructure. Therefore, assembles also the linear diffusion and mass matrices that are stored in `M`, `K` and their associated sum in `A=K+k_γ*M`
+"""
 function CatalystStatePDE(D_i::Float64, k_γ::Float64, mesh::Grid, Q::Float64=0.,
                           kₙ::Float64=0.)
     microMesh = mesh
@@ -62,6 +72,13 @@ function CatalystStatePDE(D_i::Float64, k_γ::Float64, mesh::Grid, Q::Float64=0.
                             fv=fv, dh=dh, M=M, K=K, A=A, f=f)
 end
 
+"""
+    catalyst_update!( cellvalues::CellScalarValues{dim}, dh::DofHandler, c::AbstractVector, Catalysts::Array{Array{CatalystStateODE,1},1}, δT::Float64, w::Float64)
+
+updates all `CatalystStateODE` structs that need to be passed as a arrays of arrays. The first array corresponds to the element index and in each element index there is a nested array for all gauss points holding in each entry a `CatalystStateODE`
+
+The function then updates the state by the corresponding ordinary differnetial equation
+"""
 function catalyst_update!(
                          cellvalues::CellScalarValues{dim},
                          dh::DofHandler,
@@ -86,6 +103,14 @@ function catalyst_update!(
     end
 end
 
+"""
+    catalyst_update!(cellvalues::CellScalarValues{dim}, dh::DofHandler, c::AbstractVector, Catalysts::Array{Array{CatalystStatePDE,1},1}, t::Number, computation_type::Symbol)
+
+updates all `CatalystStatePDE` structs that need to be passed as a arrays of arrays. The first array corresponds to the element index and in each element index there is a nested array for all gauss points holding in each entry a `CatalystStatePDE`
+
+The function then updates the state by the corresponding partial differnetial equation. the variable `computation_type` can either be `:linear` or `:nonlinear` and thereby determines if a linear or nonlinear PDE is solved. In case of the nonlinear PDE the nonlinearity is introduced by a source/sink term and is in this case the langmuir isotherm formulation. 
+However can be changed without any big hurdles
+"""
 function catalyst_update!(
                          cellvalues::CellScalarValues{dim},
                          dh::DofHandler,
@@ -108,6 +133,18 @@ function catalyst_update!(
     end
 end
 
+@doc raw"""
+    micrcomputation_linear!!(cₑ::Float64, Catalyst::CatalystStatePDE)
+    
+solves the discretized linear finite element problem with the current macroscopic concentration cₑ as the value for the Dirichlet boundary condition.
+After solving the linear system the previous concentration of the `Catalyst` is updated to the current solution.
+
+Besides updating the previous concentration, this function also updates the current flux across the boundary `Catalyst.cᵧ` by looping over all boundary faces and their corresponding gauss points and evaluates there the sum
+
+```math
+c_{\Gamma} = \int_{\partial \Omega}(\mathbf{D} \cdot \nabla c)\cdot \mathbf{n}\ dA
+```
+"""
 function microcomputation_linear!(cₑ::Float64, Catalyst::CatalystStatePDE)
     ch = ConstraintHandler(Catalyst.dh);
 
@@ -148,6 +185,14 @@ function microcomputation_linear!(cₑ::Float64, Catalyst::CatalystStatePDE)
     Catalyst.cᵧ = cᵧ 
 end
 
+@doc raw"""
+    micrcomputation_nonlinear!!(cₑ::Float64, Catalyst::CatalystStatePDE)
+    
+solves the discretized nonlinear finite element problem with the current macroscopic concentration cₑ as the value for the Dirichlet boundary condition.
+After setting the ConstraintHandler up the nonlinear parts are assembled by `assemble_nonlinear_micro_global!` and `assemble_nonlinear_micro_element!`, respectively, within a Newton Iteration loop.
+
+As soon as the solution of the current time step is found the very same flux across the boundary is computed as in `microcomputation_linear!`.
+"""
 function microcomputation_nonlinear!(cₑ::Float64, Catalyst::CatalystStatePDE)
     ch = ConstraintHandler(Catalyst.dh);
 
@@ -216,12 +261,13 @@ function microcomputation_nonlinear!(cₑ::Float64, Catalyst::CatalystStatePDE)
     Catalyst.cᵧ = cᵧ 
 end
 
-"""
+@doc raw"""
     function assemble_nonlinear_micro_global!(K::SparseMatrixCSC{Float64,Int64}, f::Array{Float64,1}, dh::DofHandler, cv::CellScalarValues, c::Array{Float64,1}, Δt, D, Q, kₙ, cⁿ, 𝐀::SparseMatrixCSC{Float64,Int64})
 
 Assembles only the nonlinear part of the jacobian, so needs to add the linear part
 after nonlinear assemble, i.e. 
-assemble K, add mass matrix M and Diffusion Matrix Catalyst.K on top 𝐀
+assemble jacobi K, add mass matrix M and Diffusion Matrix Catalyst.K (𝐀) on top 
+
 """
 function assemble_nonlinear_micro_global!(K::SparseMatrixCSC{Float64,Int64}, 
                                           f::Array{Float64,1}, dh::DofHandler, 
@@ -246,6 +292,11 @@ function assemble_nonlinear_micro_global!(K::SparseMatrixCSC{Float64,Int64},
 
 end
 
+"""
+    function assemble_nonlinear_micro_element!(ke, ge, cell, cv, ce, Δt, D, Q, kₙ, cⁿₑ)
+
+assembles the element jacobi for the newton iteration. This function is never called by any user, it will be called by `assemble_nonlinear_micro_global!`
+"""
 function assemble_nonlinear_micro_element!(ke, ge, cell, cv, ce, Δt, D, Q, kₙ, cⁿₑ)
     reinit!(cv, cell)
     fill!(ke, 0.0)
@@ -272,21 +323,27 @@ function assemble_nonlinear_micro_element!(ke, ge, cell, cv, ce, Δt, D, Q, kₙ
     end
 end 
 
-"""
+@doc raw"""
     langmuir_isotherm′(c¯, Q, kₙ)
 
 computes the first derivative w.r.t. c¯ of the langmuir isotherm formulation, where 
 c¯ is the current Newton guess, Q is accordingly to wiki the value that forms the asymptote,
 kₙ is the Langmuir-Sorptioncoefficient. Returns a scalar.
+```math
+f'(c^-, Q, k_n) = Q\ k_n\ (1+k_n\ c^-)^{-2}
+```
 """
 function langmuir_isotherm′(c¯, Q, kₙ)
     return Q*kₙ*(1+kₙ*c¯)^-2
 end
 
-"""
+@doc raw"""
     langmuir_isotherm″(c¯, Q, kₙ)
 
 computes the second derivative w.r.t. c¯ of the langmuir isotherm formulation.
+```math
+f''(c^-, Q, k_n) = -2Q\ k_n^2\ (1+k_n\ c^-)^{-3}
+```
 """
 function langmuir_isotherm″(c¯, Q, kₙ)
     return -2*Q*kₙ^2*(1+kₙ*c¯)^-3

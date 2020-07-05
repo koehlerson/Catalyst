@@ -5,8 +5,8 @@ Returns `M` the mass matrix
 ```math
 M_{ij} = \int_{\Omega} \phi_i\cdot v_j \ d\Omega
 ```
-where v is either the test function of a Galerkin ```math(\phi_j)``` or Petrov-Galerkin discretization ```math(\phi_j + \deltaT \mathbf{w}\cdot \nabla \phi_j)```.
-Can be controlled by setting the stabilization parameter δT equal to 0
+where $v_j$ is either the test function of a Galerkin $\phi_j$ or Petrov-Galerkin discretization $\phi_j + \delta_T \mathbf{w}\cdot \nabla \phi_j$.
+Can be controlled by the stabilization Parameter $\delta_T$. 
 """
 function doassemble(
                     w,
@@ -40,16 +40,14 @@ end
 @doc raw"""
     doassemble(D, w, δT, cellvalues, K, dh, R)
 
-Returns `K` the diffusion matrix and integrates given `R` reaction operator over finite element space
+Returns `K` the diffusion and advection matrix and integrates given `R` reaction operator over finite element space
 ```math
-K := \int_{\Omega} (D\cdot \nabla c)\cdot \nabla v d\Omega
+K := \int_{\Omega} (D\cdot \nabla \phi_i)\cdot \nabla \phi_j d\Omega + \int_{\Omega} \mathbf{w} \cdot \nabla \phi_i \ \phi_j d\Omega
 ```
 
 ```math
-R := \int_{\Omega} R v d\Omega
+R := \int_{\Omega} R \phi_i d\Omega
 ```
-
-SUPG Stabilization included.
 """
 function doassemble(
                     D::Float64,
@@ -95,7 +93,7 @@ end
 
 Returns the assembled, linearized reaction Operator where in each material point an ODE is solved
 ```math
-R := \int_{\Omega} k(\overline{c} - c) v d\Omega
+R := \int_{\Omega} k(\overline{c} - c) \phi_i d\Omega
 ```
 """
 function doassemble(
@@ -138,7 +136,7 @@ end
 
 Returns the assembled, nonlinear reaction Operator where in each material point a linear or nonlinear PDE is solved
 ```math
-R := \int_{\Omega} k \ c_{\Gamma} \ v \ d\Omega
+R := \int_{\Omega} k \ c_{\Gamma} \ \phi_i \ d\Omega
 ```
 """
 function doassemble(
@@ -174,7 +172,7 @@ end
 
 
 @doc raw"""
-    doassemble(Catalysts::Array{Array{CatalystStateODE,1},1}, w, δT, cellvalues, dh)
+    volume(dh, cv)
 
 Computes the volume of a finite element discretized domain.
 ```math

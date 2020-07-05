@@ -1,13 +1,13 @@
 @doc raw"""
-doassemble(w, δT, cellvalues, M, dh)
+    doassemble(w, δT, cellvalues, M, dh)
 
-Returns the mass matrix 
+Returns `M` the mass matrix
 ```math
-\int_{\Omega} c\cdot v d\Omega
+M_{ij} = \int_{\Omega} \phi_i\cdot v_j \ d\Omega
 ```
-where v is either the test function of a Galerkin or Petrov-Galerkin discretization.
-    Can be controlled by setting the stabilization parameter δT equal to 0
-    """
+where v is either the test function of a Galerkin ```math(\phi_j)``` or Petrov-Galerkin discretization ```math(\phi_j + \deltaT \mathbf{w}\cdot \nabla \phi_j)```.
+Can be controlled by setting the stabilization parameter δT equal to 0
+"""
 function doassemble(
                     w,
                     δT,
@@ -38,9 +38,9 @@ function doassemble(
 end
 
 @doc raw"""
-doassemble(D, w, δT, cellvalues, K, dh, R)
+    doassemble(D, w, δT, cellvalues, K, dh, R)
 
-Returns the diffusion matrix `K` and a analytic given `R` reaction operator 
+Returns `K` the diffusion matrix and integrates given `R` reaction operator over finite element space
 ```math
 K := \int_{\Omega} (D\cdot \nabla c)\cdot \nabla v d\Omega
 ```
@@ -91,11 +91,11 @@ function doassemble(
 end
 
 @doc raw"""
-doassemble(Catalysts::Array{Array{CatalystStateODE,1},1}, w, δT, cellvalues, dh)
+    doassemble(Catalysts::Array{Array{CatalystStateODE,1},1}, w, δT, cellvalues, dh)
 
 Returns the assembled, linearized reaction Operator where in each material point an ODE is solved
 ```math
-R := \int_{\Omega} k*(\overline{c} - c) v d\Omega
+R := \int_{\Omega} k(\overline{c} - c) v d\Omega
 ```
 """
 function doassemble(
@@ -134,11 +134,11 @@ function doassemble(
 end
 
 @doc raw"""
-doassemble(Catalysts::Array{Array{CatalystStatePDE,1},1}, w, δT, cellvalues, dh)
+    doassemble(Catalysts::Array{Array{CatalystStatePDE,1},1}, w, δT, cellvalues, dh)
 
 Returns the assembled, nonlinear reaction Operator where in each material point a linear or nonlinear PDE is solved
 ```math
-R := \int_{\Omega} k*c_{\Gamma} v d\Omega
+R := \int_{\Omega} k \ c_{\Gamma} \ v \ d\Omega
 ```
 """
 function doassemble(
@@ -174,7 +174,7 @@ end
 
 
 @doc raw"""
-doassemble(Catalysts::Array{Array{CatalystStateODE,1},1}, w, δT, cellvalues, dh)
+    doassemble(Catalysts::Array{Array{CatalystStateODE,1},1}, w, δT, cellvalues, dh)
 
 Computes the volume of a finite element discretized domain.
 ```math
@@ -191,4 +191,3 @@ function volume(dh::DofHandler, cv::CellScalarValues)
     end
     return dΩ
 end
-

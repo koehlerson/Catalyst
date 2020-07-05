@@ -62,7 +62,7 @@ function CatalystStatePDE(D_i::Float64, k_γ::Float64, mesh::Grid, Q::Float64=0.
                             fv=fv, dh=dh, M=M, K=K, A=A, f=f)
 end
 
-function catalystUpdate!(
+function catalyst_update!(
                          cellvalues::CellScalarValues{dim},
                          dh::DofHandler,
                          c::AbstractVector,
@@ -86,7 +86,7 @@ function catalystUpdate!(
     end
 end
 
-function catalystUpdate!(
+function catalyst_update!(
                          cellvalues::CellScalarValues{dim},
                          dh::DofHandler,
                          c::AbstractVector,
@@ -102,13 +102,13 @@ function catalystUpdate!(
         ce = [c[dof] for dof in dofs] #element concentration vector
         for q_point = 1:getnquadpoints(cellvalues)
             cₑ = function_value(cellvalues, q_point, ce)
-            #microComputation_linear!(cₑ, Catalyst[q_point])
-            eval(Symbol("microComputation_",computation_type, !))(cₑ, Catalyst[q_point])
+            #microcomputation_linear!(cₑ, Catalyst[q_point])
+            eval(Symbol("microcomputation_",computation_type, !))(cₑ, Catalyst[q_point])
         end
     end
 end
 
-function microComputation_linear!(cₑ::Float64, Catalyst::CatalystStatePDE)
+function microcomputation_linear!(cₑ::Float64, Catalyst::CatalystStatePDE)
     ch = ConstraintHandler(Catalyst.dh);
 
     ∂Ω = getfaceset(Catalyst.mesh, "1");
@@ -148,7 +148,7 @@ function microComputation_linear!(cₑ::Float64, Catalyst::CatalystStatePDE)
     Catalyst.cᵧ = cᵧ 
 end
 
-function microComputation_nonlinear!(cₑ::Float64, Catalyst::CatalystStatePDE)
+function microcomputation_nonlinear!(cₑ::Float64, Catalyst::CatalystStatePDE)
     ch = ConstraintHandler(Catalyst.dh);
 
     ∂Ω = getfaceset(Catalyst.mesh, "1");

@@ -229,9 +229,9 @@ version = "0.3.0"
 
 [[FFMPEG_jll]]
 deps = ["Bzip2_jll", "FreeType2_jll", "FriBidi_jll", "LAME_jll", "LibVPX_jll", "Libdl", "Ogg_jll", "OpenSSL_jll", "Opus_jll", "Pkg", "Zlib_jll", "libass_jll", "libfdk_aac_jll", "libvorbis_jll", "x264_jll", "x265_jll"]
-git-tree-sha1 = "814bf7865005bee373521cb49cad46182bec53b4"
+git-tree-sha1 = "0fa07f43e5609ea54848b82b4bb330b250e9645b"
 uuid = "b22a6f82-2f65-5046-a5b2-351ab43fb4e5"
-version = "4.1.0+2"
+version = "4.1.0+3"
 
 [[FFTW]]
 deps = ["AbstractFFTs", "FFTW_jll", "IntelOpenMP_jll", "Libdl", "LinearAlgebra", "MKL_jll", "Reexport"]
@@ -288,9 +288,9 @@ version = "2.10.1+2"
 
 [[FriBidi_jll]]
 deps = ["Libdl", "Pkg"]
-git-tree-sha1 = "e479537bf8a8f060c546553c14fd0633978dda7e"
+git-tree-sha1 = "2f56bee16bd0151de7b6a1eeea2ced190a2ad8d4"
 uuid = "559328eb-81f9-559d-9380-de523a88c83c"
-version = "1.0.5+2"
+version = "1.0.5+3"
 
 [[Future]]
 deps = ["Random"]
@@ -371,7 +371,7 @@ version = "0.21.0"
 
 [[JuAFEM]]
 deps = ["LinearAlgebra", "Reexport", "SparseArrays", "Tensors", "WriteVTK"]
-git-tree-sha1 = "9926069c51bf24679e3b8bc4575b630f0955e244"
+git-tree-sha1 = "2118ecd9f0166f821f170f813a8d553bd6c1f0bf"
 repo-rev = "master"
 repo-url = "https://github.com/KristofferC/JuAFEM.jl.git"
 uuid = "30d91d44-8115-11e8-1d28-c19a5ac16de8"
@@ -391,11 +391,12 @@ version = "0.5.1"
 
 [[LAME_jll]]
 deps = ["Libdl", "Pkg"]
-git-tree-sha1 = "a46bff84977753fdba8db3c50db1435bb1eb4288"
+git-tree-sha1 = "221cc8998b9060677448cbb6375f00032554c4fd"
 uuid = "c1c5ebd0-6772-5130-a774-d5fcae4a789d"
-version = "3.100.0+0"
+version = "3.100.0+1"
 
 [[LibGit2]]
+deps = ["Printf"]
 uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
 
 [[LibVPX_jll]]
@@ -498,15 +499,15 @@ version = "1.3.3+0"
 
 [[OpenBLAS_jll]]
 deps = ["CompilerSupportLibraries_jll", "Libdl", "Pkg"]
-git-tree-sha1 = "2ee3e636e94b9fd95fa8364d5cba2e20dae16609"
+git-tree-sha1 = "0c922fd9634e358622e333fc58de61f05a048492"
 uuid = "4536629a-c528-5b80-bd46-f80d51c5b363"
-version = "0.3.9+2"
+version = "0.3.9+5"
 
 [[OpenSSL_jll]]
 deps = ["Libdl", "Pkg"]
-git-tree-sha1 = "d2a6f25262d568b5a7e454cf7ff5066a79d16c7d"
+git-tree-sha1 = "7aaaded15bf393b5f34c2aad5b765c18d26cb495"
 uuid = "458c3c95-2e84-50aa-8efc-19380b2a3a95"
-version = "1.1.1+2"
+version = "1.1.1+4"
 
 [[OpenSpecFun_jll]]
 deps = ["CompilerSupportLibraries_jll", "Libdl", "Pkg"]
@@ -522,9 +523,9 @@ version = "0.20.1"
 
 [[Opus_jll]]
 deps = ["Libdl", "Pkg"]
-git-tree-sha1 = "c9931bf2fcdb57b48c227395c61ea82603212f7d"
+git-tree-sha1 = "002c18f222a542907e16c83c64a1338992da7e2c"
 uuid = "91d4177d-7536-5919-b921-800302f37372"
-version = "1.3.1+0"
+version = "1.3.1+1"
 
 [[OrderedCollections]]
 deps = ["Random", "Serialization", "Test"]
@@ -557,7 +558,7 @@ uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
 version = "1.0.2"
 
 [[Pkg]]
-deps = ["Dates", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Test", "UUIDs"]
+deps = ["Dates", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "UUIDs"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 
 [[PlotThemes]]
@@ -660,9 +661,9 @@ version = "0.6.1"
 
 [[Rmath_jll]]
 deps = ["Libdl", "Pkg"]
-git-tree-sha1 = "1660f8fefbf5ab9c67560513131d4e933012fc4b"
+git-tree-sha1 = "d76185aa1f421306dec73c057aa384bad74188f0"
 uuid = "f50d1b31-88e8-58de-be2c-1cc44531875f"
-version = "0.2.2+0"
+version = "0.2.2+1"
 
 [[SHA]]
 uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
@@ -797,36 +798,36 @@ version = "1.4.1"
 
 [[Zlib_jll]]
 deps = ["Libdl", "Pkg"]
-git-tree-sha1 = "2f6c3e15e20e036ee0a0965879b31442b7ec50fa"
+git-tree-sha1 = "622d8b6dc0c7e8029f17127703de9819134d1b71"
 uuid = "83775a58-1f1d-513f-b197-d71354ab007a"
-version = "1.2.11+9"
+version = "1.2.11+14"
 
 [[libass_jll]]
 deps = ["Bzip2_jll", "FreeType2_jll", "FriBidi_jll", "Libdl", "Pkg", "Zlib_jll"]
-git-tree-sha1 = "d0259e0624e08ae9ebae16c80257caabc25f2048"
+git-tree-sha1 = "027a304b2a90de84f690949a21f94e5ae0f92c73"
 uuid = "0ac62f75-1d6f-5e53-bd7c-93b484bb37c0"
-version = "0.14.0+1"
+version = "0.14.0+2"
 
 [[libfdk_aac_jll]]
 deps = ["Libdl", "Pkg"]
-git-tree-sha1 = "0e4ace600c20714a8dd67700c4502714d8473e8e"
+git-tree-sha1 = "480c7ed04f68ea3edd4c757f5db5b6a0a4e0bd99"
 uuid = "f638f0a6-7fb0-5443-88ba-1cc74229b280"
-version = "0.1.6+1"
+version = "0.1.6+2"
 
 [[libvorbis_jll]]
 deps = ["Libdl", "Ogg_jll", "Pkg"]
-git-tree-sha1 = "71e54fb89ac3e0344c7185d1876fd96b0f246952"
+git-tree-sha1 = "6a66f65b5275dfa799036c8a3a26616a0a271c4a"
 uuid = "f27f6e37-5d2b-51aa-960f-b287f2bc3b7a"
-version = "1.3.6+2"
+version = "1.3.6+4"
 
 [[x264_jll]]
 deps = ["Libdl", "Pkg"]
-git-tree-sha1 = "23664c0757c3740050ca0e22944c786c165ca25a"
+git-tree-sha1 = "d89346fe63a6465a9f44e958ac0e3d366af90b74"
 uuid = "1270edf5-f2f9-52d2-97e9-ab00b5d0237a"
-version = "2019.5.25+1"
+version = "2019.5.25+2"
 
 [[x265_jll]]
 deps = ["Libdl", "Pkg"]
-git-tree-sha1 = "9345e417084421a8e91373d6196bc58e660eed2a"
+git-tree-sha1 = "61324ad346b00a6e541896b94201c9426591e43a"
 uuid = "dfaa095f-4041-5dcd-9319-2fabd8486b76"
-version = "3.0.0+0"
+version = "3.0.0+1"

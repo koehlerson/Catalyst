@@ -1,5 +1,5 @@
 """
-save1D(storage::Array, savename::String, path::String; headername="data")
+    save1D(storage::Array, savename::String, path::String; headername="data")
 
 writes a one dimensional field to disk by providing the field in `storage`, a savename as `String` and a path.
 """

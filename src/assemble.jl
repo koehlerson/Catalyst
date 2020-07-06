@@ -3,7 +3,7 @@
 
 Returns `M` the mass matrix
 ```math
-M_{ij} = \int_{\Omega} \phi_i\cdot v_j \ d\Omega
+M_{ij} = \int_{\Omega} \phi_i\cdot v_j \ dV
 ```
 where $v_j$ is either the test function of a Galerkin $\phi_j$ or Petrov-Galerkin discretization $\phi_j + \delta_T \mathbf{w}\cdot \nabla \phi_j$.
 Can be controlled by the stabilization Parameter $\delta_T$. 
@@ -42,11 +42,11 @@ end
 
 Returns `K` the diffusion and advection matrix and integrates given `R` reaction operator over finite element space
 ```math
-K := \int_{\Omega} (D\cdot \nabla \phi_i)\cdot \nabla \phi_j d\Omega + \int_{\Omega} \mathbf{w} \cdot \nabla \phi_i \ \phi_j d\Omega
+K := \int_{\Omega} (D\cdot \nabla \phi_i)\cdot \nabla \phi_j dV + \int_{\Omega} \mathbf{w} \cdot \nabla \phi_i \ \phi_j dV
 ```
 
 ```math
-R := \int_{\Omega} R \phi_i d\Omega
+R := \int_{\Omega} R \phi_i dV
 ```
 """
 function doassemble(
@@ -93,7 +93,7 @@ end
 
 Returns the assembled, linearized reaction Operator where in each material point an ODE is solved
 ```math
-R := \int_{\Omega} k(\overline{c} - c) \phi_i d\Omega
+R := \int_{\Omega} k(\overline{c} - c) \phi_i dV
 ```
 """
 function doassemble(
@@ -136,7 +136,7 @@ end
 
 Returns the assembled, nonlinear reaction Operator where in each material point a linear or nonlinear PDE is solved
 ```math
-R := \int_{\Omega} k \ c_{\Gamma} \ \phi_i \ d\Omega
+R := \int_{\Omega} k \ c_{\Gamma} \ \phi_i \ dV
 ```
 """
 function doassemble(
@@ -176,7 +176,7 @@ end
 
 Computes the volume of a finite element discretized domain.
 ```math
-V = \int_{\Omega} 1 d\Omega
+V = \int_{\Omega} 1 \ dV
 ```
 """
 function volume(dh::DofHandler, cv::CellScalarValues)

@@ -8,7 +8,7 @@ using DrWatson
 import ProgressMeter
 
 include("Parser.jl")
-export CatalystStateODE, CatalystStatePDE, catalystUpdate!
+export CatalystStateODE, CatalystStatePDE, catalyst_update!
 export doassemble
 
 abstract type CatalystState end

@@ -27,12 +27,12 @@ d = (Dᵢ=Dᵢ, kᵧ=1.0, k=k,microcomp_type=microcomp_type, Q=Q, kₙ=kₙ)
 save = DrWatson.savename(d, digits=6)
 
 cd(datadir(path))
-#mkdir(save)
-#mkdir("$save/paraview")
-#mkdir("$save/fields")
-#mkdir("$save/fields/c")
-#mkdir("$save/fields/R")
-#mkdir("$save/fields/cPsim")
+mkdir(save)
+mkdir("$save/paraview")
+mkdir("$save/fields")
+mkdir("$save/fields/c")
+mkdir("$save/fields/R")
+mkdir("$save/fields/cPsim")
 
 c, R = Catalyst.solve(Dᵢ, kᵧ, k, input_exp, output_exp, microsave=true,
                       microsave_time=1:1000, microsave_path=datadir("$path/$save/paraview"),

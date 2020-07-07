@@ -1,3 +1,14 @@
+"""
+This is an example file that should show how to run a simulation and save the results afterwards.
+Usually this part is done in the REPL in an interactive session, such that one can check
+
+- did I created the correct folder
+- are the parameters set up
+- progress viz. progress bar
+
+For multiple runs with different parameters the creation of the parameters in line
+23 should be changed to a dictionary (according to DrWatson.jl)
+"""
 using DrWatson
 @quickactivate :Catalyst
 

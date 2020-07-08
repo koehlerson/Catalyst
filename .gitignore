@@ -5,4 +5,5 @@ outcmaes
 **.avi
 **.pvd
 docs/build/
-
+**.png
+data/simulation/

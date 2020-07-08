@@ -22,8 +22,8 @@ for row in CSV.File(datadir("experiment/new-data.csv"); delim=" ")
     push!(output_exp, row.O)
 end
 
-Dᵢ=0.000678; kᵧ=1.0; k=1.0;microcomp_type=:nonlinear; Q=20.0; kₙ=10.0
-d = (Dᵢ=Dᵢ, kᵧ=1.0, k=k,microcomp_type=microcomp_type, Q=Q, kₙ=kₙ)
+Dᵢ=0.000678; kᵧ=1.; k=1.0;microcomp_type=:nonlinear; Q=0.1; kₙ=10.0
+d = (Dᵢ=Dᵢ, kᵧ=kᵧ, k=k,microcomp_type=microcomp_type, Q=Q, kₙ=kₙ)
 save = DrWatson.savename(d, digits=6)
 
 cd(datadir(path))

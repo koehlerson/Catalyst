@@ -8,7 +8,8 @@ makedocs(sitename="Multiscale Heterogeneous Catalysis",
                 "Macro Scale" => Any["Assembly" => "macro/assembly.md",
                                      "Solver" => "macro/solver.md"],
                 "Micro Scale" => Any["Theory" => "micro/theory.md",
-                                     "Implementation" => "micro/implementation.md"],
+                                     "Implementation" => "micro/implementation.md",
+                                     "Parameter Study" => "micro/paramstudy.md"],
                 "Utils" => "utils/utils.md",
                 "Examples" => "examples/run.md"])
 deploydocs(

@@ -5,7 +5,7 @@ include(srcdir("Parser.jl"))
 
 """
 Here I call a python package that contains the specific optimizer I use
-the optimizer is called "Covariance-Matrix Adaptation - Evolution Strategy
+the optimizer is called Covariance-Matrix Adaptation - Evolution Strategy
 """
 
 using PyCall
@@ -13,9 +13,10 @@ cma = pyimport("cma")
 
 """
 This part is what needs to be inside a function with suitable function parameters,
-maybe initial guess "Init" as a parameter and/or cma.CMAOptions() which is essentially a python dictionary wrapped inside a python class
+maybe initial guess `Init` as a parameter and/or cma.CMAOptions() which is essentially a python dictionary wrapped inside a python class
 Also input/output should be a function argument, as well as the microMesh 
 """
+
 input_exp = []
 output_exp = []
 for row in CSV.File(datadir("experiment/new-data.csv"); delim = " ")
@@ -36,8 +37,9 @@ while isempty(es.stop()) # while stopping criterion not fulfilled
     Threads.@threads for i in 1:length(solutions)
         ind_fittness = Catalyst.solve(solutions[i][1], solutions[i][2], 1.,
                                       input_exp, output_exp, progress=false, 
+                                      microcomp_type=:nonlinear,
                                       Q=solutions[i][3], kₙ=solutions[i][4],
-                                      calibration=true, microMesh=microMesh)# save the model error
+                                      calibration=true, micromesh=microMesh)# save the model error
         fitness[i] = ind_fittness # assign the error to the error array, also called fitness of the model
     end
 

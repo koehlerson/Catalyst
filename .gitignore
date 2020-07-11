@@ -7,3 +7,4 @@ outcmaes
 docs/build/
 **.png
 data/simulation/
+**.ipynb_checkpoints

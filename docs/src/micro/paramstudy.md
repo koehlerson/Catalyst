@@ -9,7 +9,8 @@ In this study we fix $Q=1$.
 
 Here, we take a look at the homogenized absorption term, i.e.
 
-$$\overline{R}=\int_{\partial\Omega} (\mathbf{D} \nabla c) \cdot \mathbf{n} \ dA$$
+$$\overline{R} = \int_{\Omega} k\ c_{\Gamma} \ dV$$
+$$c_{\Gamma}:=\int_{\partial\Omega} (\mathbf{D} \nabla c) \cdot \mathbf{n} \ dA$$
 
  $k_n=0.1$                |  $k_n=1$
 :-------------------------:|:-------------------------:

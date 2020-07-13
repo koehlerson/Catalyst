@@ -37,7 +37,7 @@ function solve(Dᵢ::Float64, k::Float64, kᵧ::Float64,
                progress=true, calibration=false,
                microsave=false, microsave_time = (250, 300, 350, 400),
                microsave_location=((10,1), (50,1), (80,1)),
-							 microcomp_type=:linear, microsave_path="simulation",
+	       microcomp_type=:linear, microsave_path="simulation",
                Q=0., kₙ=0.,
                micromesh=Parser.getGrid(projectdir("test/catalyst.msh"))) 
 

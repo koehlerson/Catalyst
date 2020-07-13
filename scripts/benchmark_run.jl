@@ -13,7 +13,7 @@ function benchmark_distributed_evaluation(parameters,N)
     end
     # done reading 
 
-    for i in 1:length(N)
+    for i in 1:N
         error = Catalyst.solve(parameters[1], parameters[2], 1.,
                                       input_exp, output_exp, progress=true, 
                                       microcomp_type=:nonlinear,

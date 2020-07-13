@@ -261,10 +261,6 @@ function microcomputation_nonlinear!(cₑ::Float64, Catalyst::CatalystStatePDE)
     Catalyst.cᵧ = cᵧ
 end
 
-<<<<<<< HEAD
-function assemble_nonlinear_micro_global!(K::SparseMatrixCSC{Float64,Int64},
-                                          f::Array{Float64,1}, dh::DofHandler,
-=======
 @doc raw"""
     function assemble_nonlinear_micro_global!(K::SparseMatrixCSC{Float64,Int64}, f::Array{Float64,1}, dh::DofHandler, cv::CellScalarValues, c::Array{Float64,1}, Δt, D, Q, kₙ, cⁿ, 𝐀::SparseMatrixCSC{Float64,Int64})
 
@@ -275,18 +271,9 @@ assemble jacobi K, add mass matrix M and Diffusion Matrix Catalyst.K (𝐀) on t
 """
 function assemble_nonlinear_micro_global!(K::SparseMatrixCSC{Float64,Int64}, 
                                           f::Array{Float64,1}, dh::DofHandler, 
->>>>>>> master
                                           cv::CellScalarValues, c::Array{Float64,1},
                                           Δt, D, Q, kₙ, cⁿ,
                                           𝐀::SparseMatrixCSC{Float64,Int64})
-<<<<<<< HEAD
-    """
-    Assembles only the nonlinear part of the jacobian, so needs to add the linear part
-    after nonlinear assemble, i.e.
-    assemble K, add mass matrix M and Diffusion Matrix Catalyst.K on top 𝐀
-    """
-=======
->>>>>>> master
     n = ndofs_per_cell(dh)
     ke = zeros(n,n)
     ge = zeros(n)

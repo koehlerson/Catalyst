@@ -1,9 +1,9 @@
 module Catalyst
 
 using Reexport
-@reexport using JuAFEM, SparseArrays, UnicodePlots, Plots
-@reexport using DataFrames, Tensors, CSV, Parameters, IterativeSolvers
-@reexport using AlgebraicMultigrid
+@reexport using JuAFEM
+@reexport using DataFrames, CSV
+using AlgebraicMultigrid, Parameters, IterativeSolvers, SparseArrays, UnicodePlots, Plots, Tensors
 using DrWatson
 import ProgressMeter
 

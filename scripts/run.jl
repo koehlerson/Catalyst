@@ -11,9 +11,10 @@ For multiple runs with different parameters the creation of the parameters in li
 """
 
 using DrWatson
+using Plots
 @quickactivate :Catalyst
 
-path="simulation/nonlinear_micro_problem/comparison_to_linear"
+path="simulation/nonlinear_micro_problem/calibration"
 input_exp=Float64[]
 output_exp=Float64[]
 
@@ -22,7 +23,7 @@ for row in CSV.File(datadir("experiment/new-data.csv"); delim=" ")
     push!(output_exp, row.O)
 end
 
-Dᵢ=0.000678; kᵧ=1.; k=1.0;microcomp_type=:nonlinear; Q=0.1; kₙ=10.0
+Dᵢ=0.000759878; kᵧ=1.; k=6.410439; microcomp_type=:nonlinear; Q=5.20935; kₙ=2.4999
 d = (Dᵢ=Dᵢ, kᵧ=kᵧ, k=k,microcomp_type=microcomp_type, Q=Q, kₙ=kₙ)
 save = DrWatson.savename(d, digits=6)
 
@@ -44,3 +45,6 @@ maxR = maximum(maximum.(R))
 maxR *= 1.1
 
 Catalyst.plotAnimation(R, "$save/$microcomp_type-reaction.gif", (0, maxR))
+
+Catalyst.plotOverTime(c,label="Sim")
+plot!(input_exp, label="input")

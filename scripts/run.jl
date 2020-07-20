@@ -34,7 +34,7 @@ mkdir("$save/fields/c")
 mkdir("$save/fields/R")
 mkdir("$save/fields/cPsim")
 
-c, R = Catalyst.solve(Dᵢ, kᵧ, k, input_exp, output_exp, microsave=true,
+c, R = Catalyst.solve(Dᵢ, k, kᵧ, input_exp, output_exp, microsave=true,
                       microsave_time=1:1000, microsave_path=datadir("$path/$save/paraview"),
                       microcomp_type=:nonlinear, Q=Q, kₙ=kₙ)
 

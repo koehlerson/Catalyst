@@ -108,7 +108,7 @@ end
 
 updates all `CatalystStatePDE` structs that need to be passed as a arrays of arrays. The first array corresponds to the element index and in each element index there is a nested array for all gauss points holding in each entry a `CatalystStatePDE`
 
-The function then updates the state by the corresponding partial differnetial equation. the variable `computation_type` can either be `:linear` or `:nonlinear` and thereby determines if a linear or nonlinear PDE is solved. In case of the nonlinear PDE the nonlinearity is introduced by a source/sink term and is in this case the langmuir isotherm formulation. 
+The function then updates the state by the corresponding partial differnetial equation. the variable `computation_type` can either be `:linear` or `:nonlinear` and thereby determines if a linear or nonlinear PDE is solved. In case of the nonlinear PDE the nonlinearity is introduced by a source/sink term and is in this case the langmuir isotherm formulation.
 However can be changed without any big hurdles
 """
 function catalyst_update!(
@@ -135,7 +135,7 @@ end
 
 @doc raw"""
     micrcomputation_linear!!(cₑ::Float64, Catalyst::CatalystStatePDE)
-    
+
 solves the discretized linear finite element problem with the current macroscopic concentration cₑ as the value for the Dirichlet boundary condition.
 After solving the linear system the previous concentration of the `Catalyst` is updated to the current solution.
 
@@ -187,7 +187,7 @@ end
 
 @doc raw"""
     micrcomputation_nonlinear!!(cₑ::Float64, Catalyst::CatalystStatePDE)
-    
+
 solves the discretized nonlinear finite element problem with the current macroscopic concentration cₑ as the value for the Dirichlet boundary condition.
 After setting the ConstraintHandler up the nonlinear parts are assembled by `assemble_nonlinear_micro_global!` and `assemble_nonlinear_micro_element!`, respectively, within a Newton Iteration loop.
 
@@ -261,32 +261,19 @@ function microcomputation_nonlinear!(cₑ::Float64, Catalyst::CatalystStatePDE)
     Catalyst.cᵧ = cᵧ
 end
 
-<<<<<<< HEAD
-function assemble_nonlinear_micro_global!(K::SparseMatrixCSC{Float64,Int64},
-                                          f::Array{Float64,1}, dh::DofHandler,
-=======
 @doc raw"""
     function assemble_nonlinear_micro_global!(K::SparseMatrixCSC{Float64,Int64}, f::Array{Float64,1}, dh::DofHandler, cv::CellScalarValues, c::Array{Float64,1}, Δt, D, Q, kₙ, cⁿ, 𝐀::SparseMatrixCSC{Float64,Int64})
 
 Assembles only the nonlinear part of the jacobian, so needs to add the linear part
-after nonlinear assemble, i.e. 
-assemble jacobi K, add mass matrix M and Diffusion Matrix Catalyst.K (𝐀) on top 
+after nonlinear assemble, i.e.
+assemble jacobi K, add mass matrix M and Diffusion Matrix Catalyst.K (𝐀) on top
 
 """
-function assemble_nonlinear_micro_global!(K::SparseMatrixCSC{Float64,Int64}, 
-                                          f::Array{Float64,1}, dh::DofHandler, 
->>>>>>> master
+function assemble_nonlinear_micro_global!(K::SparseMatrixCSC{Float64,Int64},
+                                          f::Array{Float64,1}, dh::DofHandler,
                                           cv::CellScalarValues, c::Array{Float64,1},
                                           Δt, D, Q, kₙ, cⁿ,
                                           𝐀::SparseMatrixCSC{Float64,Int64})
-<<<<<<< HEAD
-    """
-    Assembles only the nonlinear part of the jacobian, so needs to add the linear part
-    after nonlinear assemble, i.e.
-    assemble K, add mass matrix M and Diffusion Matrix Catalyst.K on top 𝐀
-    """
-=======
->>>>>>> master
     n = ndofs_per_cell(dh)
     ke = zeros(n,n)
     ge = zeros(n)
@@ -339,7 +326,7 @@ end
 @doc raw"""
     langmuir_isotherm′(c¯, Q, kₙ)
 
-computes the first derivative w.r.t. c¯ of the langmuir isotherm formulation, where 
+computes the first derivative w.r.t. c¯ of the langmuir isotherm formulation, where
 c¯ is the current Newton guess, Q is accordingly to wiki the value that forms the asymptote,
 kₙ is the Langmuir-Sorptioncoefficient. Returns a scalar.
 ```math

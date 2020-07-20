@@ -8,8 +8,10 @@ makedocs(sitename="Multiscale Heterogeneous Catalysis",
                 "Macro Scale" => Any["Assembly" => "macro/assembly.md",
                                      "Solver" => "macro/solver.md"],
                 "Micro Scale" => Any["Theory" => "micro/theory.md",
-                                     "Implementation" => "micro/implementation.md"],
-                "Utils" => "utils/utils.md"])
+                                     "Implementation" => "micro/implementation.md",
+                                     "Parameter Study" => "micro/paramstudy.md"],
+                "Utils" => "utils/utils.md",
+                "Examples" => "examples/run.md"])
 deploydocs(
     repo = "github.com/koehlerson/Catalyst.git",
     push_preview=true,

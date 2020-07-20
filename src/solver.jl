@@ -7,7 +7,7 @@
         progress=true, calibration=false,
         microsave=false, microsave_time = (250, 300, 350, 400),
         microsave_location=((10,1), (50,1), (80,1)),
-        microcomp_type=:linear,
+        microcomp_type=:linear, microsave_path="simulation/",
         Q=0., kₙ=0.,
         micromesh=Parser.getGrid(projectdir("test/catalyst.msh"))) 
 
@@ -23,6 +23,7 @@ Sets up the finite element spaces, discretizes the operators, applies boundary c
 - `calibration::Bool`: enables/disables a returned error between the last node concentration and the output experiment concentration.
 - `microsave::Bool, microsave_time::Tuple` and `microsave_location::Tuple`: controls which times and locations of the microscopic problems are saved to the disk
 - `microcomp_type::Symbol`: decides whether or not linear or nonlinear micro computations are done.
+- `microsave_path::String`: path where to store the micro `.pvd` files inside data/ dir
 - `micromesh::JuAFEM.Grid`: describes the microscopic domain.
 
 Returns either two arrays, one dimensional concentration field `c` at each time step
@@ -36,7 +37,7 @@ function solve(Dᵢ::Float64, k::Float64, kᵧ::Float64,
                progress=true, calibration=false,
                microsave=false, microsave_time = (250, 300, 350, 400),
                microsave_location=((10,1), (50,1), (80,1)),
-               microcomp_type=:linear,
+	       microcomp_type=:linear, microsave_path="simulation",
                Q=0., kₙ=0.,
                micromesh=Parser.getGrid(projectdir("test/catalyst.msh"))) 
 
@@ -91,11 +92,11 @@ function solve(Dᵢ::Float64, k::Float64, kᵧ::Float64,
     end
 
     if microsave
-        name = @savename Dᵢ k kᵧ
         pvds = []
         for idx in 1:length(microsave_location)
-            eleno = microsave_location[idx][1]
-            push!(pvds, paraview_collection(datadir("simulation/ele-$eleno$name")))
+            ele = microsave_location[idx][1]
+        		name = @savename ele Dᵢ k kᵧ Q kₙ microcomp_type
+            push!(pvds, paraview_collection(datadir("$microsave_path/micro_Catalyst_$name.pvd")))
         end
     end
 
@@ -126,10 +127,10 @@ function solve(Dᵢ::Float64, k::Float64, kᵧ::Float64,
         if t in microsave_time && microsave
             for microPoints in collect(enumerate(microsave_location))
                 catalyst = states[microPoints[2][1]][microPoints[2][2]]
-                name = (ele=microPoints[2][1], D_i=Dᵢ,
-                        k=k, k_gamma=kᵧ, t=t)
+                name = (ele=microPoints[2][1], Dᵢ=Dᵢ,
+                        k=k, kᵧ=kᵧ, Q=Q, kₙ=kₙ, t=t)
                 name = savename(name)
-                vtk = vtk_grid(datadir("simulation/micro_Catalyst_$name"), catalyst.dh)
+                vtk = vtk_grid(datadir("$microsave_path/micro_Catalyst_$name.vtu"), catalyst.dh)
                 vtk_point_data(vtk, catalyst.dh, catalyst.c_n, "") 
                 vtk_save(vtk)
                 pvds[microPoints[1]][t] = vtk

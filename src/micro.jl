@@ -222,8 +222,8 @@ function microcomputation_nonlinear!(cₑ::Float64, Catalyst::CatalystStatePDE)
             error("Reached maximum Newton iterations, aborting")
             break
         end
-        assemble_nonlinear_micro_global!(𝐉, r, Catalyst.dh, Catalyst.cv, c,
-                                         1.0, Catalyst.D_i, Catalyst.Q, Catalyst.kₙ,
+        assemble_nonlinear_micro_global!(𝐉, r, Catalyst.dh, Catalyst.cv, c, 
+                                         1.0, Catalyst.D_i, Catalyst.k_γ, Catalyst.Q, Catalyst.kₙ,
                                          cₙ, Catalyst.A)
         normr = norm(r[JuAFEM.free_dofs(ch)])
         #println("Iteration: $newton_itr \tresidual: $normr")
@@ -272,7 +272,7 @@ assemble jacobi K, add mass matrix M and Diffusion Matrix Catalyst.K (𝐀) on t
 function assemble_nonlinear_micro_global!(K::SparseMatrixCSC{Float64,Int64},
                                           f::Array{Float64,1}, dh::DofHandler,
                                           cv::CellScalarValues, c::Array{Float64,1},
-                                          Δt, D, Q, kₙ, cⁿ,
+                                          Δt, D, kᵧ, Q, kₙ, cⁿ, 
                                           𝐀::SparseMatrixCSC{Float64,Int64})
     n = ndofs_per_cell(dh)
     ke = zeros(n,n)
@@ -285,7 +285,7 @@ function assemble_nonlinear_micro_global!(K::SparseMatrixCSC{Float64,Int64},
         global_dofs = celldofs(cell)
         ce = c[global_dofs]
         cⁿₑ = cⁿ[global_dofs]
-        assemble_nonlinear_micro_element!(ke, ge, cell, cv, ce, Δt, De, Q, kₙ, cⁿₑ)
+        assemble_nonlinear_micro_element!(ke, ge, cell, cv, ce, Δt, De, kᵧ,Q, kₙ, cⁿₑ)
         assemble!(assembler, global_dofs, ge, ke)
     end
     K .+= 𝐀
@@ -297,7 +297,7 @@ end
 
 assembles the element jacobi for the newton iteration. This function is never called by any user, it will be called by `assemble_nonlinear_micro_global!`
 """
-function assemble_nonlinear_micro_element!(ke, ge, cell, cv, ce, Δt, D, Q, kₙ, cⁿₑ)
+function assemble_nonlinear_micro_element!(ke, ge, cell, cv, ce, Δt, D,kᵧ,Q, kₙ, cⁿₑ)
     reinit!(cv, cell)
     fill!(ke, 0.0)
     fill!(ge, 0.0)
@@ -313,7 +313,7 @@ function assemble_nonlinear_micro_element!(ke, ge, cell, cv, ce, Δt, D, Q, kₙ
         for i in 1:ndofs
             vᵢ = shape_value(cv, qp, i)
             ∇vᵢ = shape_gradient(cv, qp, i)
-            ge[i] += (c¯*vᵢ + Δt*D*(∇vᵢ⋅∇c¯) + f′*(c¯ - cⁿ)*vᵢ - cⁿ*vᵢ)*dΩ
+            ge[i] += (kᵧ*c¯*vᵢ + Δt*D*(∇vᵢ⋅∇c¯) + f′*(c¯ - cⁿ)*vᵢ - kᵧ*cⁿ*vᵢ)*dΩ
             for j in 1:ndofs
                 vⱼ = shape_value(cv, qp, j)
                 ∇vⱼ = shape_gradient(cv, qp, j)

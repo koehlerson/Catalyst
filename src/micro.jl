@@ -28,14 +28,14 @@ end
     c_n::Array{Float64,1}
     cᵧ::Float64
     ip::Lagrange{3,RefTetrahedron,1}
-    qr::QuadratureRule{3,RefTetrahedron,Float64}
+    qr::QuadratureRule{3,RefTetrahedron,Float64} 
     qr_face::QuadratureRule{2,RefTetrahedron,Float64}
-    cv::CellScalarValues
+    cv::CellScalarValues 
     fv::FaceScalarValues
-    dh::DofHandler
+    dh::DofHandler 
     M::SparseMatrixCSC{Float64,Int64}
-    K::SparseMatrixCSC{Float64,Int64}
-    A::SparseMatrixCSC{Float64,Int64}
+    K::SparseMatrixCSC{Float64,Int64}	
+    A::SparseMatrixCSC{Float64,Int64}	
     f::Array{Float64,1}
 end
 
@@ -50,7 +50,7 @@ function CatalystStatePDE(D_i::Float64, k_γ::Float64, mesh::Grid, Q::Float64=0.
 
     ip = Lagrange{3, RefTetrahedron, 1}()
     qr = QuadratureRule{3, RefTetrahedron}(2)
-    qr_face = QuadratureRule{2,RefTetrahedron}(2) #QuadratureRule
+    qr_face = QuadratureRule{2,RefTetrahedron}(2) #QuadratureRule 
     cv = CellScalarValues(qr, ip)
     fv = FaceScalarValues(qr_face, ip) #FEValues
 
@@ -67,8 +67,8 @@ function CatalystStatePDE(D_i::Float64, k_γ::Float64, mesh::Grid, Q::Float64=0.
     M = doassemble(w, δT, cv, M, dh);
     A = K + k_γ*M
     return CatalystStatePDE(D_i=D_i, k_γ=k_γ, kₙ=kₙ, Q=Q,
-                            mesh=microMesh, c_n=c_n, cᵧ=0.0,
-                            ip=ip, qr=qr, qr_face=qr_face, cv=cv,
+                            mesh=microMesh, c_n=c_n, cᵧ=0.0, 
+                            ip=ip, qr=qr, qr_face=qr_face, cv=cv, 
                             fv=fv, dh=dh, M=M, K=K, A=A, f=f)
 end
 
@@ -108,7 +108,7 @@ end
 
 updates all `CatalystStatePDE` structs that need to be passed as a arrays of arrays. The first array corresponds to the element index and in each element index there is a nested array for all gauss points holding in each entry a `CatalystStatePDE`
 
-The function then updates the state by the corresponding partial differnetial equation. the variable `computation_type` can either be `:linear` or `:nonlinear` and thereby determines if a linear or nonlinear PDE is solved. In case of the nonlinear PDE the nonlinearity is introduced by a source/sink term and is in this case the langmuir isotherm formulation.
+The function then updates the state by the corresponding partial differnetial equation. the variable `computation_type` can either be `:linear` or `:nonlinear` and thereby determines if a linear or nonlinear PDE is solved. In case of the nonlinear PDE the nonlinearity is introduced by a source/sink term and is in this case the langmuir isotherm formulation. 
 However can be changed without any big hurdles
 """
 function catalyst_update!(
@@ -135,7 +135,7 @@ end
 
 @doc raw"""
     micrcomputation_linear!!(cₑ::Float64, Catalyst::CatalystStatePDE)
-
+    
 solves the discretized linear finite element problem with the current macroscopic concentration cₑ as the value for the Dirichlet boundary condition.
 After solving the linear system the previous concentration of the `Catalyst` is updated to the current solution.
 
@@ -150,13 +150,13 @@ function microcomputation_linear!(cₑ::Float64, Catalyst::CatalystStatePDE)
 
     ∂Ω = getfaceset(Catalyst.mesh, "1");
     dbc = Dirichlet(:c, ∂Ω, (x, t) -> cₑ)
-    add!(ch, dbc);
+    add!(ch, dbc);	
     close!(ch)
     update!(ch, 0.0);
 
     copyA = copy(Catalyst.A)
 
-    b = Catalyst.k_γ*(Catalyst.M * Catalyst.c_n) #only valid for zero micro source term
+    b = Catalyst.k_γ*(Catalyst.M * Catalyst.c_n) #only valid for zero micro source term 
 
     apply!(copyA, b, ch)
     cᵢ = cg(copyA, b)
@@ -182,12 +182,12 @@ function microcomputation_linear!(cₑ::Float64, Catalyst::CatalystStatePDE)
     end
 
     Catalyst.c_n = cᵢ
-    Catalyst.cᵧ = cᵧ
+    Catalyst.cᵧ = cᵧ 
 end
 
 @doc raw"""
     micrcomputation_nonlinear!!(cₑ::Float64, Catalyst::CatalystStatePDE)
-
+    
 solves the discretized nonlinear finite element problem with the current macroscopic concentration cₑ as the value for the Dirichlet boundary condition.
 After setting the ConstraintHandler up the nonlinear parts are assembled by `assemble_nonlinear_micro_global!` and `assemble_nonlinear_micro_element!`, respectively, within a Newton Iteration loop.
 
@@ -198,7 +198,7 @@ function microcomputation_nonlinear!(cₑ::Float64, Catalyst::CatalystStatePDE)
 
     ∂Ω = getfaceset(Catalyst.mesh, "1");
     dbc = Dirichlet(:c, ∂Ω, (x, t) -> cₑ)
-    add!(ch, dbc);
+    add!(ch, dbc);	
     close!(ch)
     update!(ch, 0.0);
 
@@ -258,19 +258,19 @@ function microcomputation_nonlinear!(cₑ::Float64, Catalyst::CatalystStatePDE)
     end
 
     Catalyst.c_n = c
-    Catalyst.cᵧ = cᵧ
+    Catalyst.cᵧ = cᵧ 
 end
 
 @doc raw"""
     function assemble_nonlinear_micro_global!(K::SparseMatrixCSC{Float64,Int64}, f::Array{Float64,1}, dh::DofHandler, cv::CellScalarValues, c::Array{Float64,1}, Δt, D, Q, kₙ, cⁿ, 𝐀::SparseMatrixCSC{Float64,Int64})
 
 Assembles only the nonlinear part of the jacobian, so needs to add the linear part
-after nonlinear assemble, i.e.
-assemble jacobi K, add mass matrix M and Diffusion Matrix Catalyst.K (𝐀) on top
+after nonlinear assemble, i.e. 
+assemble jacobi K, add mass matrix M and Diffusion Matrix Catalyst.K (𝐀) on top 
 
 """
-function assemble_nonlinear_micro_global!(K::SparseMatrixCSC{Float64,Int64},
-                                          f::Array{Float64,1}, dh::DofHandler,
+function assemble_nonlinear_micro_global!(K::SparseMatrixCSC{Float64,Int64}, 
+                                          f::Array{Float64,1}, dh::DofHandler, 
                                           cv::CellScalarValues, c::Array{Float64,1},
                                           Δt, D, kᵧ, Q, kₙ, cⁿ, 
                                           𝐀::SparseMatrixCSC{Float64,Int64})
@@ -309,8 +309,8 @@ function assemble_nonlinear_micro_element!(ke, ge, cell, cv, ce, Δt, D,kᵧ,Q, 
         cⁿ = function_value(cv, qp, cⁿₑ)
         ∇c¯ = function_gradient(cv, qp, ce)
         f′= langmuir_isotherm′(c¯, Q, kₙ)
-        f″ = langmuir_isotherm″(c¯, Q, kₙ)
-        for i in 1:ndofs
+        f″ = langmuir_isotherm″(c¯, Q, kₙ)	
+        for i in 1:ndofs 
             vᵢ = shape_value(cv, qp, i)
             ∇vᵢ = shape_gradient(cv, qp, i)
             ge[i] += (kᵧ*c¯*vᵢ + Δt*D*(∇vᵢ⋅∇c¯) + f′*(c¯ - cⁿ)*vᵢ - kᵧ*cⁿ*vᵢ)*dΩ
@@ -321,12 +321,12 @@ function assemble_nonlinear_micro_element!(ke, ge, cell, cv, ce, Δt, D,kᵧ,Q, 
             end
         end
     end
-end
+end 
 
 @doc raw"""
     langmuir_isotherm′(c¯, Q, kₙ)
 
-computes the first derivative w.r.t. c¯ of the langmuir isotherm formulation, where
+computes the first derivative w.r.t. c¯ of the langmuir isotherm formulation, where 
 c¯ is the current Newton guess, Q is accordingly to wiki the value that forms the asymptote,
 kₙ is the Langmuir-Sorptioncoefficient. Returns a scalar.
 ```math

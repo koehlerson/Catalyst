@@ -22,6 +22,7 @@ end
     # Store Catalyst properties
     D_i::Float64
     k_γ::Float64
+    kᵧnew::Float64
     kₙ::Float64
     Q::Float64
     mesh::Grid
@@ -44,7 +45,7 @@ end
 
 constructs a `CatalystStatePDE` struct that stores all information about the microstructure. Therefore, assembles also the linear diffusion and mass matrices that are stored in `M`, `K` and their associated sum in `A=K+k_γ*M`
 """
-function CatalystStatePDE(D_i::Float64, k_γ::Float64, mesh::Grid, Q::Float64=0.,
+function CatalystStatePDE(D_i::Float64, k_γ::Float64, kᵧnew::Float64, mesh::Grid, Q::Float64=0.,
                           kₙ::Float64=0.)
     microMesh = mesh
 
@@ -66,7 +67,7 @@ function CatalystStatePDE(D_i::Float64, k_γ::Float64, mesh::Grid, Q::Float64=0.
     K, f = doassemble(D_i, w, δT, cv, K, dh);
     M = doassemble(w, δT, cv, M, dh);
     A = K + k_γ*M
-    return CatalystStatePDE(D_i=D_i, k_γ=k_γ, kₙ=kₙ, Q=Q,
+    return CatalystStatePDE(D_i=D_i, k_γ=k_γ, kᵧnew=kᵧnew, kₙ=kₙ, Q=Q,
                             mesh=microMesh, c_n=c_n, cᵧ=0.0, 
                             ip=ip, qr=qr, qr_face=qr_face, cv=cv, 
                             fv=fv, dh=dh, M=M, K=K, A=A, f=f)
@@ -223,7 +224,7 @@ function microcomputation_nonlinear!(cₑ::Float64, Catalyst::CatalystStatePDE)
             break
         end
         assemble_nonlinear_micro_global!(𝐉, r, Catalyst.dh, Catalyst.cv, c, 
-                                         1.0, Catalyst.D_i, Catalyst.k_γ, Catalyst.Q, Catalyst.kₙ,
+                                         1.0, Catalyst.D_i, Catalyst.k_γ, Catalyst.kᵧnew,Catalyst.Q, Catalyst.kₙ,
                                          cₙ, Catalyst.A)
         normr = norm(r[JuAFEM.free_dofs(ch)])
         #println("Iteration: $newton_itr \tresidual: $normr")
@@ -272,7 +273,7 @@ assemble jacobi K, add mass matrix M and Diffusion Matrix Catalyst.K (𝐀) on t
 function assemble_nonlinear_micro_global!(K::SparseMatrixCSC{Float64,Int64}, 
                                           f::Array{Float64,1}, dh::DofHandler, 
                                           cv::CellScalarValues, c::Array{Float64,1},
-                                          Δt, D, kᵧ, Q, kₙ, cⁿ, 
+                                          Δt, D, kᵧ, kᵧnew, Q, kₙ, cⁿ, 
                                           𝐀::SparseMatrixCSC{Float64,Int64})
     n = ndofs_per_cell(dh)
     ke = zeros(n,n)
@@ -285,7 +286,7 @@ function assemble_nonlinear_micro_global!(K::SparseMatrixCSC{Float64,Int64},
         global_dofs = celldofs(cell)
         ce = c[global_dofs]
         cⁿₑ = cⁿ[global_dofs]
-        assemble_nonlinear_micro_element!(ke, ge, cell, cv, ce, Δt, De, kᵧ,Q, kₙ, cⁿₑ)
+        assemble_nonlinear_micro_element!(ke, ge, cell, cv, ce, Δt, De, kᵧ, kᵧnew,Q, kₙ, cⁿₑ)
         assemble!(assembler, global_dofs, ge, ke)
     end
     K .+= 𝐀
@@ -297,7 +298,7 @@ end
 
 assembles the element jacobi for the newton iteration. This function is never called by any user, it will be called by `assemble_nonlinear_micro_global!`
 """
-function assemble_nonlinear_micro_element!(ke, ge, cell, cv, ce, Δt, D,kᵧ,Q, kₙ, cⁿₑ)
+function assemble_nonlinear_micro_element!(ke, ge, cell, cv, ce, Δt, D,kᵧ, kᵧnew, Q, kₙ, cⁿₑ)
     reinit!(cv, cell)
     fill!(ke, 0.0)
     fill!(ge, 0.0)
@@ -313,11 +314,11 @@ function assemble_nonlinear_micro_element!(ke, ge, cell, cv, ce, Δt, D,kᵧ,Q, 
         for i in 1:ndofs 
             vᵢ = shape_value(cv, qp, i)
             ∇vᵢ = shape_gradient(cv, qp, i)
-            ge[i] += (kᵧ*c¯*vᵢ + Δt*D*(∇vᵢ⋅∇c¯) + f′*(c¯ - cⁿ)*vᵢ - kᵧ*cⁿ*vᵢ)*dΩ
+            ge[i] += (kᵧ*c¯*vᵢ + Δt*D*(∇vᵢ⋅∇c¯) + kᵧnew*f′*(c¯ - cⁿ)*vᵢ - kᵧ*cⁿ*vᵢ)*dΩ
             for j in 1:ndofs
                 vⱼ = shape_value(cv, qp, j)
                 ∇vⱼ = shape_gradient(cv, qp, j)
-                ke[i, j] += (f′*vᵢ*vⱼ + f″*c¯*vᵢ*vⱼ - f″*cⁿ*vᵢ*vⱼ) *dΩ
+                ke[i, j] += kᵧnew*(f′*vᵢ*vⱼ + f″*c¯*vᵢ*vⱼ - f″*cⁿ*vᵢ*vⱼ) *dΩ
             end
         end
     end
